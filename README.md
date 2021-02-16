@@ -1,1 +1,3 @@
-Collaborators: Leduc M., Pereira A., Zhang S.
+# topological-data-analysis
+Applied topology using abstract simplicial complexes
+
