@@ -60,7 +60,7 @@ class Point:
   
   def __hash__(self):
     return hash(self.name)
-  
+
 # A k-simplex consists of (d+1) points.
 @total_ordering
 class Simplex:
@@ -93,13 +93,13 @@ class Simplex:
   
   def __hash__(self):
     return hash('|'.join(map(str,self.points)))
-  
+
 # An abstract simplicial complex is a collection of simplices closed under the subset operation.
 class ASC:
   def __init__(self, simplices=None):
     self.simplices = simplices if simplices else set()
   
-  # We define the (highest) "dimension" of an ASC as the maximum dimension among its simplices, if -1 if it's empty.
+  # We define the dimension of an ASC as the maximum dimension among its simplices, if -1 if it's empty.
   def highest_dimension(self):
     return max([sim.dimension() for sim in self.simplices]) if self.simplicies else -1
   
