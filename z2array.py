@@ -52,7 +52,7 @@ def z2array(*args, **kwargs):
     return Z2array(np.array(*args, **kwargs))
 
 
-def z2reduced_row(z2mat):
+def z2reduced_row(z2mat, copy_mat=True):
     """
     Copied from the recursive implementation
     here, https://math.stackexchange.com/
@@ -71,7 +71,10 @@ def z2reduced_row(z2mat):
             and len(z2mat.shape) == 2):
         raise ValueError("Not supported!")
 
-    A = z2mat.copy()
+    if copy_mat:
+        A = z2mat.copy()
+    else:
+        A = z2mat
 
     # Check if we're done.
     r, c = A.shape
@@ -83,7 +86,8 @@ def z2reduced_row(z2mat):
         if A[i, 0] != 0:
             break
     else:
-        B = z2reduced_row(A[:, 1:])
+        B = z2reduced_row(A[:, 1:],
+                          copy_mat=False)
         return np.hstack([A[:, :1], B])
 
     # Do row exchange if needed.
@@ -102,7 +106,8 @@ def z2reduced_row(z2mat):
     A[1:] = A[1:] - (A[0] * A[1:, 0:1])
 
     # Move on to next column.
-    B = z2reduced_row(A[1:, 1:])
+    B = z2reduced_row(A[1:, 1:],
+                      copy_mat=False)
 
     return np.vstack([A[:1], np.hstack([A[1:, :1], B])])
 
