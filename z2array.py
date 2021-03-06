@@ -55,59 +55,10 @@ def z2array(*args, **kwargs):
 
 def z2rank(z2mat):
     """
-    Want to use optimized NumPy/SciPy C/Fortran
-    routines with Python bindings rather than
-    write a slow pure-Python Gaussian elimination
-    function. That's the reason for this function:
-    making this computation *fast* in wall-clock
-    time, even for big matrices.
-
-    How?
-    Exploit theorem that for real m x n matrix A,
-    PA = LU (P an m x m elementary matrix,
-    L n x n lower triangular, U m x n upper triangular)
-    and rank(A) = rank(U) = # nonzero rows in U.
-
-    Wrinkle: The SciPy LU algorithm used is for real
-    matrices and our matrices are Z2.
-
-    Solution:
-    We convert A from Z2 to reals to exploit the SciPy
-    algorithm for the factorization, then convert U to Z2.
-    The rank of U *as a Z2 matrix* will be the rank of A
-    *as a Z2 matrix*.
-
-    Why?
-    Because P just changes the order of rows of A, and for
-    real matrices X, Y, Z and modulo 2,
-    X = YZ => (X mod 2) = (Y mod2) (Z mod2) mod2,
-    because a+b mod2 = (a mod2) + (b mod2) mod2 and
-    ab mod2 = (a mod2)(b mod2) = (a mod2)(b mod2) mod2.
-
-    So, in our case, (PA mod2) = P(A mod2) = PA (since
-    A was a Z2 matrix when we started),
-    so PA = (L mod2) (U mod2) mod2. Multiplying by P does
-    not change the rank of A. Hence, rank PA = rank A.
-
-    [Finish checking if this is always true and fill gap.]
-    And rank A = rank (U mod 2) = # nonzero rows in (U mod2)
-    follows from back-subsitution step in the LU algorithm for
-    solving the system:
-
-    Ax = b with PA = LU, so LUx = Pb. Setting y = Ux,
-
-    1. Solve Ly = Pb for y.
-    2. Solve Ux = y for x.
-
-    Back to implementation:
-    After U is in Z2, count number of zero rows in U to get
-    rank of A. For this, we convert the data type temporarily
-    back to regular integers. Then we just sum over each row
-    (since our previous conversion to Z2Array made all elements
-    nonnegative) and check how many rows of U are nonzero.
-
-    We do it this way to play nicely with our overloading
-    of some NumPy methods in the Z2Array class.
+    Came up with a possible counterexample.
+    Will probably just have to write a
+    Gaussian elimination function for Z2array,
+    which won't be fast, but it will have to do.
     """
     # LU factorization with pivoting.
     P, L, U = linalg.lu(z2mat)
@@ -115,12 +66,12 @@ def z2rank(z2mat):
     U_z2 = Z2array(U)
     L_z2 = Z2array(L)
     P_z2 = Z2array(P)
-    print("Original")
+    print("A")
     print(z2mat)
-    print("PA")
-    print(P_z2 @ Z2array(z2mat))
-    print("(L mod2)(U mod2)")
-    print((L.astype(np.int) % 2) @ (U.astype(np.int) % 2))
+    print("L")
+    print(L)
+    print("U")
+    print(U)
     # Count nonzero rows.
     row_sums_as_int = np.array(U_z2, dtype=np.int).sum(axis=1)
     rank = len(row_sums_as_int[row_sums_as_int > 0])
@@ -195,4 +146,5 @@ if __name__ == "__main__":
     print(f"\nMatrix B:\n{B}")
     print(f"Rank of matrix B: {rank_B} (should be {rank_B_})")
     print(f"Passes? {b_pass_rankB}")
-    #z2rank(np.random.rand(5,5) * 27)
+    # Counter example
+    z2rank(np.abs(np.random.rand(10,10)).round().astype(np.int))
