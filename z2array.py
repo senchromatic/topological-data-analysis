@@ -53,27 +53,70 @@ def z2array(*args, **kwargs):
     return Z2array(np.array(*args, **kwargs))
 
 
+def z2reduced_row(z2mat):
+    """
+    Copied from the recursive implementation
+    here, https://math.stackexchange.com/
+    questions/3073083/how-to-reduce
+    -matrix-into-row-echelon-form-
+    in-python/3073117,
+    but slightly modified for Z2.
+
+    (The arithmetic below will work correctly
+    because of the overloaded array class.
+    The original will not work because +=/-=
+    with array indexing is not yet overloaded
+    in Z2array.)
+    """
+    if not (isinstance(z2mat, Z2array)
+            and len(z2mat.shape) == 2):
+        raise ValueError("Not supported!")
+
+    A = z2mat.copy()
+
+    # Check if we're done.
+    r, c = A.shape
+    if r == 0 or c == 0:
+        return A
+
+    # Find pivot
+    for i in range(len(A)):
+        if A[i, 0] != 0:
+            break
+    else:
+        B = z2reduced_row(A[:, 1:])
+        return np.hstack([A[:, :1], B])
+
+    # Do row exchange if needed.
+    if i > 0:
+        ith_row = A[i].copy()
+        A[i] = A[0]
+        A[0] = ith_row
+
+    """
+    Zero out column entries below pivot.
+
+    This arithmetic is in Z2 if the input
+    numpy array is of our Z2array type.
+    Hence the type-checking at the top.
+    """
+    A[1:] = A[1:] - (A[0] * A[1:, 0:1])
+
+    # Move on to next column.
+    B = z2reduced_row(A[1:, 1:])
+
+    return np.vstack([A[:1], np.hstack([A[1:, :1], B])])
+
+
 def z2rank(z2mat):
     """
-    Came up with a possible counterexample.
-    Will probably just have to write a
-    Gaussian elimination function for Z2array,
-    which won't be fast, but it will have to do.
+    Count number of nonzero rows
+    in reduced row form.
     """
-    # LU factorization with pivoting.
-    P, L, U = linalg.lu(z2mat)
-    # Convert back to our Z2 NumPy type.
-    U_z2 = Z2array(U)
-    L_z2 = Z2array(L)
-    P_z2 = Z2array(P)
-    print("A")
-    print(z2mat)
-    print("L")
-    print(L)
-    print("U")
-    print(U)
-    # Count nonzero rows.
-    row_sums_as_int = np.array(U_z2, dtype=np.int).sum(axis=1)
+    rrz2mat = z2reduced_row(z2mat)
+    # Cast as integer to sum across rows quickly.
+    row_sums_as_int = np.array(rrz2mat, dtype=np.int).sum(axis=1)
+    # 0 rows will be the rows with 0 sums in the integer version.
     rank = len(row_sums_as_int[row_sums_as_int > 0])
     return rank
 
@@ -146,5 +189,38 @@ if __name__ == "__main__":
     print(f"\nMatrix B:\n{B}")
     print(f"Rank of matrix B: {rank_B} (should be {rank_B_})")
     print(f"Passes? {b_pass_rankB}")
-    # Counter example
-    z2rank(np.abs(np.random.rand(10,10)).round().astype(np.int))
+
+    print("\n\n@@@@@@@@@@@@@@@@@@@@@@@@@@")
+    print("Visual check for reduced row forms:")
+    print("@@@@@@@@@@@@@@@@@@@@@@@@@@")
+    np.random.seed(42)
+    M1 = Z2array(np.abs(np.random.rand(10, 10)).round().astype(np.int))
+    M2 = Z2array(np.abs(np.random.rand(7, 7)).round().astype(np.int))
+    M3 = Z2array(np.abs(np.random.rand(4, 3)).round().astype(np.int))
+    M4 = Z2array(np.abs(np.random.rand(9, 2)).round().astype(np.int))
+    M5 = Z2array(np.abs(np.random.rand(5, 8)).round().astype(np.int))
+    rrM1 = z2reduced_row(M1)
+    rrM2 = z2reduced_row(M2)
+    rrM3 = z2reduced_row(M3)
+    rrM4 = z2reduced_row(M4)
+    rrM5 = z2reduced_row(M5)
+    rankM1 = z2rank(M1)
+    rankM2 = z2rank(M2)
+    rankM3 = z2rank(M3)
+    rankM4 = z2rank(M4)
+    rankM5 = z2rank(M5)
+    print(f"\n\nArray 1:\n{M1}")
+    print(f"\nReduced row form:\n{rrM1}")
+    print(f"\nRank: {rankM1}")
+    print(f"\n\nArray 2:\n{M2}")
+    print(f"\nReduced row form:\n{rrM2}")
+    print(f"\nRank: {rankM2}")
+    print(f"\n\nArray 3:\n{M3}")
+    print(f"\nReduced row form:\n{rrM3}")
+    print(f"\nRank: {rankM3}")
+    print(f"\n\nArray 4:\n{M4}")
+    print(f"\nReduced row form:\n{rrM4}")
+    print(f"\nRank: {rankM4}")
+    print(f"\n\nArray 5:\n{M5}")
+    print(f"\nReduced row form:\n{rrM5}")
+    print(f"\nRank: {rankM5}")
