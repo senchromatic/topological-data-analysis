@@ -32,8 +32,8 @@ class Z2array(np.ndarray):
         Will convert matrix to matrix with entries
         in Z2.
         """
-        # Input array is an already formed ndarray instance
-        # We first cast to be our class type
+        # Input array is an already formed ndarray instance.
+        # We convert it to a Z2^n array here.
         obj = np.asarray(input_array.astype(np.int) % 2).view(cls)
         return obj
 
@@ -84,6 +84,9 @@ class Z2array(np.ndarray):
         if ufunc.nout == 1:
             results = (results,)
 
+        # This line below does all the actual work to ensure Z2^n arithmetic.
+        # Everything else is just handling. See documentation for subclassing
+        # NumPy ndarray class.
         results = tuple(((np.asarray(result).view(np.int) % 2).view(Z2array)
                          if output is None else output)
                         for result, output in zip(results, outputs))
