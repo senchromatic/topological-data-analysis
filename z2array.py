@@ -2,6 +2,27 @@ import numpy as np
 
 
 class Z2array(np.ndarray):
+    """
+    Subclasses NumPy array class to
+    be able to do operations with matrices
+    in Z2^n (n-dimensional matrices whose entries
+    are in the field Z2), respecting proper
+    Z2 arithmetic.
+
+    Broadcastable operations (NumPy ufuncs) are
+    overloaded. So, matrix arithmetic will work
+    as expected. One caveat: Assignment operators
+    such as += are *not* overloaded yet, so
+    for example:
+
+    arr1 = arr1 + arr2 will give correct results,
+    but
+    arr1 += arr2 will give incorrect results.
+
+    Functions from np.linalg or SciPy will not respect
+    the overloading. We must make our own versions
+    (such as the z2rank function below).
+    """
 
     def __new__(cls, input_array, info=None):
         """
