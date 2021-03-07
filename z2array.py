@@ -2,14 +2,57 @@ import numpy as np
 
 
 class Z2array(np.ndarray):
+    """
+    Subclasses NumPy array class to
+    be able to do operations with matrices
+    in Z2^n (n-dimensional matrices whose entries
+    are in the field Z2), respecting proper
+    Z2 arithmetic.
+
+    Broadcastable operations (NumPy ufuncs) are
+    overloaded. So, matrix arithmetic will work
+    as expected. One caveat: Assignment operators
+    such as += are *not* overloaded yet, so
+    for example:
+
+    arr1 = arr1 + arr2 will give correct results,
+    but
+    arr1 += arr2 will give incorrect results.
+
+    Functions from np.linalg or SciPy will not respect
+    the overloading. We must make our own versions
+    (such as the z2rank function below).
+    """
 
     def __new__(cls, input_array, info=None):
-        # Input array is an already formed ndarray instance
-        # We first cast to be our class type
+        """
+        Python constructor. Runs before __init__
+        method. See Python documentation.
+
+        Will convert matrix to matrix with entries
+        in Z2.
+        """
+        # Input array is an already formed ndarray instance.
+        # We convert it to a Z2^n array here.
         obj = np.asarray(input_array.astype(np.int) % 2).view(cls)
         return obj
 
     def __array_ufunc__(self, ufunc, method, *inputs, out=None, **kwargs):
+        """
+        Overloads NumPy ufunc handling for arrays
+        of Z2array type. Ensures arithmetic operations
+        are performed respecting the field Z2.
+
+        See https://numpy.org/doc/stable/user/basics.
+        subclassing.html#array-ufunc-for-ufuncs
+
+        and
+
+        https://numpy.org/doc/stable/reference/ufuncs.html
+
+        for an explanation of NumPy ufuncs and how to
+        overload them.
+        """
         args = []
         in_no = []
         for i, input_ in enumerate(inputs):
@@ -41,6 +84,9 @@ class Z2array(np.ndarray):
         if ufunc.nout == 1:
             results = (results,)
 
+        # This line below does all the actual work to ensure Z2^n arithmetic.
+        # Everything else is just handling. See documentation for subclassing
+        # NumPy ndarray class.
         results = tuple(((np.asarray(result).view(np.int) % 2).view(Z2array)
                          if output is None else output)
                         for result, output in zip(results, outputs))
@@ -49,11 +95,23 @@ class Z2array(np.ndarray):
 
 
 def z2array(*args, **kwargs):
+    """
+    Use this function to construct
+    Z2array objects. Do not instantiate
+    directly as Z2array(foo).
+
+    This function wraps the NumPy
+    constructor and is used in the same
+    way, e.g. arr = z2array([[1, 0], [0,1]]).
+    """
     return Z2array(np.array(*args, **kwargs))
 
 
-def z2reduced_row(z2mat, copy_mat=True):
+def z2row_echelon(z2mat, copy_mat=True):
     """
+    Return row echelon form of matrix,
+    respecting Z2 arithmetic.
+
     Copied from the recursive implementation
     here, https://math.stackexchange.com/
     questions/3073083/how-to-reduce
@@ -86,7 +144,7 @@ def z2reduced_row(z2mat, copy_mat=True):
         if A[i, 0] != 0:
             break
     else:
-        B = z2reduced_row(A[:, 1:],
+        B = z2row_echelon(A[:, 1:],
                           copy_mat=False)
         return np.hstack([A[:, :1], B])
 
@@ -106,7 +164,7 @@ def z2reduced_row(z2mat, copy_mat=True):
     A[1:] = A[1:] - (A[0] * A[1:, 0:1])
 
     # Move on to next column.
-    B = z2reduced_row(A[1:, 1:],
+    B = z2row_echelon(A[1:, 1:],
                       copy_mat=False)
 
     return np.vstack([A[:1], np.hstack([A[1:, :1], B])])
@@ -115,9 +173,9 @@ def z2reduced_row(z2mat, copy_mat=True):
 def z2rank(z2mat):
     """
     Count number of nonzero rows
-    in reduced row form.
+    in row echelon form.
     """
-    rrz2mat = z2reduced_row(z2mat)
+    rrz2mat = z2row_echelon(z2mat)
     # Cast as integer to sum across rows quickly.
     row_sums_as_int = np.array(rrz2mat, dtype=np.int).sum(axis=1)
     # 0 rows will be the rows with 0 sums in the integer version.
@@ -195,7 +253,7 @@ if __name__ == "__main__":
     print(f"Passes? {b_pass_rankB}")
 
     print("\n\n@@@@@@@@@@@@@@@@@@@@@@@@@@")
-    print("Visual check for reduced row forms:")
+    print("Visual check for row echelon forms:")
     print("@@@@@@@@@@@@@@@@@@@@@@@@@@")
     np.random.seed(42)
     M1 = Z2array(np.abs(np.random.rand(10, 10)).round().astype(np.int))
@@ -203,28 +261,28 @@ if __name__ == "__main__":
     M3 = Z2array(np.abs(np.random.rand(4, 3)).round().astype(np.int))
     M4 = Z2array(np.abs(np.random.rand(9, 2)).round().astype(np.int))
     M5 = Z2array(np.abs(np.random.rand(5, 8)).round().astype(np.int))
-    rrM1 = z2reduced_row(M1)
-    rrM2 = z2reduced_row(M2)
-    rrM3 = z2reduced_row(M3)
-    rrM4 = z2reduced_row(M4)
-    rrM5 = z2reduced_row(M5)
+    rrM1 = z2row_echelon(M1)
+    rrM2 = z2row_echelon(M2)
+    rrM3 = z2row_echelon(M3)
+    rrM4 = z2row_echelon(M4)
+    rrM5 = z2row_echelon(M5)
     rankM1 = z2rank(M1)
     rankM2 = z2rank(M2)
     rankM3 = z2rank(M3)
     rankM4 = z2rank(M4)
     rankM5 = z2rank(M5)
     print(f"\n\nArray 1:\n{M1}")
-    print(f"\nReduced row form:\n{rrM1}")
+    print(f"\nRow echelon form:\n{rrM1}")
     print(f"\nRank: {rankM1}")
     print(f"\n\nArray 2:\n{M2}")
-    print(f"\nReduced row form:\n{rrM2}")
+    print(f"\nRow echelon form:\n{rrM2}")
     print(f"\nRank: {rankM2}")
     print(f"\n\nArray 3:\n{M3}")
-    print(f"\nReduced row form:\n{rrM3}")
+    print(f"\nRow echelon form:\n{rrM3}")
     print(f"\nRank: {rankM3}")
     print(f"\n\nArray 4:\n{M4}")
-    print(f"\nReduced row form:\n{rrM4}")
+    print(f"\nRow echelon form:\n{rrM4}")
     print(f"\nRank: {rankM4}")
     print(f"\n\nArray 5:\n{M5}")
-    print(f"\nReduced row form:\n{rrM5}")
+    print(f"\nRow echelon form:\n{rrM5}")
     print(f"\nRank: {rankM5}")
