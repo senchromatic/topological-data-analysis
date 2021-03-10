@@ -2,6 +2,7 @@
 
 import metrics
 
+from copy import deepcopy
 from functools import total_ordering
 from sets import powerset
 
@@ -73,11 +74,14 @@ class Simplex:
   def __str__(self, sep=', '):
     return '{' + sep.join(sorted(map(str, self.points))) + '}'
   
-  def add_point(self, other_point):
-    self.points.add(other_point)
+  def add_point(self, new_point):
+    self.points.add(new_point)
   
   def add_points(self, other_simplex):
     self.points = self.points | other_simplex.points
+
+  def remove_point(self, existing_point):
+    self.points.remove(existing_point)
   
   def get_point_by_name(self, name):
     for p in self.points:
@@ -92,7 +96,22 @@ class Simplex:
     return self.points == other.points
   
   def __hash__(self):
-    return hash('|'.join(map(str,self.points)))
+    return hash('|'.join(map(str, sorted(self.points))))
+
+# A boundary is a p-chain with coefficients over Z_2, from a free abelian group over simplices.
+class Boundary():
+
+  def __init__(self):
+    self.simplices = set()
+
+  def __str__(self, sep=' + '):
+    return sep.join(sorted(map(str, self.simplices)))
+
+  def xor(self, sim):
+    if sim in self.simplices:
+      self.simplices.remove(sim)
+    else:
+      self.simplices.add(sim)
 
 # An abstract simplicial complex is a collection of simplices closed under the subset operation.
 class ASC:
@@ -101,7 +120,7 @@ class ASC:
   
   # We define the dimension of an ASC as the maximum dimension among its simplices, if -1 if it's empty.
   def highest_dimension(self):
-    return max([sim.dimension() for sim in self.simplices]) if self.simplicies else -1
+    return max([sim.dimension() for sim in self.simplices]) if self.simplices else -1
   
   def all_dimensions(self):
     return set([sim.dimension() for sim in self.simplices])
@@ -125,3 +144,28 @@ class ASC:
   def add_simplex(self, sim):
     self.simplices.add(sim)
 
+  # Computes the boundary for all simplices of dimension k.
+  # If k is unspecified, the ASC's dimension will be used by default.
+  # Algorithm: For each simplex, take one point at a time
+  #            and delete it to form a face, then add this face to the boundary.
+  # Let S be the collection of simplices.
+  # Time complexity: O(k|S|)
+  # Memory usage: O(k|S|)
+  def compute_boundary(self, k=None, verbose=False):
+    if k is None:
+      k = self.highest_dimension()
+    
+    sims = self.k_simplices(k)
+    bdy = Boundary()
+    for sim in sims:
+      if verbose:
+        print("simplex: ", sim)
+      for p in sim.points:
+        face = deepcopy(sim)
+        face.remove_point(p)
+        if verbose:
+          print("face: ", face)
+        bdy.xor(face)
+      if verbose:
+        print()
+    return bdy
