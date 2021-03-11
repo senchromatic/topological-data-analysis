@@ -94,8 +94,10 @@ class Simplex:
   
   def __eq__(self, other):
     return self.points == other.points
-  def compute_boundary(self,verbose=False):
-    bdy = Boundary()#The same code as for ASC, just moved. 
+  
+  # Compute boundary on a simplex.
+  def compute_boundary(self, verbose=False):
+    bdy = Boundary() 
     if verbose:
       print("simplex: ", self)
     for p in self.points:
@@ -107,6 +109,7 @@ class Simplex:
     if verbose:
       print()
     return bdy
+  
   def __hash__(self):
     return hash('|'.join(map(str, sorted(self.points))))
 
