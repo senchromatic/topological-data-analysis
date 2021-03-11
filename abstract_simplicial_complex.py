@@ -95,6 +95,21 @@ class Simplex:
   def __eq__(self, other):
     return self.points == other.points
   
+  # Compute boundary on a simplex.
+  def compute_boundary(self, verbose=False):
+    bdy = Boundary() 
+    if verbose:
+      print("simplex: ", self)
+    for p in self.points:
+      face = deepcopy(self)
+      face.remove_point(p)
+      if verbose:
+        print("face: ", face)
+      bdy.xor(face)
+    if verbose:
+      print()
+    return bdy
+  
   def __hash__(self):
     return hash('|'.join(map(str, sorted(self.points))))
 
@@ -169,3 +184,8 @@ class ASC:
       if verbose:
         print()
     return bdy
+  
+  # Computes and prints the boundary for each simplex separately
+  def display_simplex_boundaries(self, k=None, verbose=False):
+    for sim in self.k_simplices(k):
+      print("Boundary of", sim, ":", sim.compute_boundary(verbose=verbose))
