@@ -94,7 +94,19 @@ class Simplex:
   
   def __eq__(self, other):
     return self.points == other.points
-  
+  def compute_boundary(self,verbose=False):
+    bdy = Boundary()
+    if verbose:
+      print("simplex: ", self)
+    for p in self.points:
+      face = deepcopy(self)
+      face.remove_point(p)
+      if verbose:
+        print("face: ", face)
+      bdy.xor(face)
+    if verbose:
+      print()
+    return bdy
   def __hash__(self):
     return hash('|'.join(map(str, sorted(self.points))))
 
