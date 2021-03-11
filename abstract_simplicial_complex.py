@@ -95,7 +95,7 @@ class Simplex:
   def __eq__(self, other):
     return self.points == other.points
   def compute_boundary(self,verbose=False):
-    bdy = Boundary()
+    bdy = Boundary()#The same code as for ASC, just moved. 
     if verbose:
       print("simplex: ", self)
     for p in self.points:
