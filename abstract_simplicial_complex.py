@@ -184,3 +184,8 @@ class ASC:
       if verbose:
         print()
     return bdy
+  
+  # Computes and prints the boundary for each simplex separately
+  def display_simplex_boundaries(self, k=None, verbose=False):
+    for sim in self.k_simplices(k):
+      print("Boundary of", sim, ":", sim.compute_boundary(verbose=verbose))
