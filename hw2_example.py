@@ -149,13 +149,19 @@ if __name__ == '__main__':
   
   asc_a = create_asc_a(verbose=False)
   asc_b = create_asc_b(verbose=False)
-  
-  print("\nBoundary over 2-simplices in abstract simplicial complex A:")
-  print(asc_a.compute_boundary(k=2))
-  print("\nBoundary over 1-simplices in abstract simplicial complex A:")
-  print(asc_a.compute_boundary(k=1), '\n')
 
-  print("\nBoundary for 2-simplices in abstract simplicial complex B:")
-  print(asc_b.compute_boundary(k=2))
-  print("\nBoundary for 1-simplices in abstract simplicial complex B:")
-  print(asc_b.compute_boundary(k=1), '\n')
+  print("------------- Abstract Simplicial Complex A -------------")
+  for k in range(2):
+    print("\nBoundary over " + str(k+1) + "-simplices in entire abstract simplicial complex A:")
+    print(asc_a.compute_boundary(k=k+1))
+    print("\nBoundary for each " + str(k+1) + "-simplex, computed separately:")
+    asc_a.display_simplex_boundaries(k=k+1)
+  print("\n")
+
+  print("------------- Abstract Simplicial Complex B -------------")
+  for k in range(2):
+    print("\nBoundary over " + str(k+1) + "-simplices in entire abstract simplicial complex B:")
+    print(asc_b.compute_boundary(k=k+1))
+    print("\nBoundary for each " + str(k+1) + "-simplex, computed separately:")
+    asc_b.display_simplex_boundaries(k=k+1)
+  print("\n")
