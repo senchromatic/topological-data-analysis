@@ -107,6 +107,14 @@ def z2array(*args, **kwargs):
     return Z2array(np.array(*args, **kwargs))
 
 
+def z2array_zeros(shape):
+    return z2array(np.zeros(shape, dtype=int))
+
+
+def z2array_ones(shape):
+    return z2array(np.ones(shape, dtype=int))
+
+
 def z2row_echelon(z2mat, copy_mat=True):
     """
     Return row echelon form of matrix,
