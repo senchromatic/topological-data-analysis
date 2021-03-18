@@ -133,7 +133,7 @@ class ASC:
   def __init__(self, simplices=None):
     self.simplices = simplices if simplices else set()
   
-  # We define the dimension of an ASC as the maximum dimension among its simplices, if -1 if it's empty.
+  # We define the dimension of an ASC as the maximum dimension among its simplices, or -1 if it's empty.
   def highest_dimension(self):
     return max([sim.dimension() for sim in self.simplices]) if self.simplices else -1
   
