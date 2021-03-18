@@ -155,7 +155,8 @@ if __name__ == '__main__':
     print("\nBoundary over " + str(k+1) + "-simplices in entire abstract simplicial complex A:")
     print(asc_a.compute_boundary(k=k+1))
     print("\nBoundary for each " + str(k+1) + "-simplex, computed separately:")
-    asc_a.display_simplex_boundaries(k=k+1)
+    # asc_a.display_simplex_boundaries(k=k+1)
+    asc_a.compute_boundary(k=k+1, matrix=True, verbose=True)
   print("\n")
 
   print("------------- Abstract Simplicial Complex B -------------")
@@ -163,5 +164,6 @@ if __name__ == '__main__':
     print("\nBoundary over " + str(k+1) + "-simplices in entire abstract simplicial complex B:")
     print(asc_b.compute_boundary(k=k+1))
     print("\nBoundary for each " + str(k+1) + "-simplex, computed separately:")
-    asc_b.display_simplex_boundaries(k=k+1)
+    # asc_b.display_simplex_boundaries(k=k+1)
+    asc_b.compute_boundary(k=k+1, matrix=True, verbose=True)
   print("\n")

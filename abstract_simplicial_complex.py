@@ -5,6 +5,7 @@ import metrics
 from copy import deepcopy
 from functools import total_ordering
 from sets import powerset
+from z2array import z2array_zeros
 
 
 # A point must have a unique identifier or a (partial) coordinate vector as representation.
@@ -166,13 +167,25 @@ class ASC:
   # Let S be the collection of simplices.
   # Time complexity: O(k|S|)
   # Memory usage: O(k|S|)
-  def compute_boundary(self, k=None, verbose=False):
+  # If matrix option is True, returns boundary matrix (z2array).
+  def compute_boundary(self, k=None, matrix=False, verbose=False):
     if k is None:
       k = self.highest_dimension()
     
     sims = self.k_simplices(k)
-    bdy = Boundary()
+    bdy = Boundary()  # Boundary of all k-simplices.
+    mat_dict = {"rows": {}, "cols": {}}  # Matches indices to simplex hashes.
+    bdy_mat = None
+    ones_r = []  # Row indices of positive entries.
+    ones_c = []  # Column indices of positive entries.
+    n_col = -1
+    n_row = -1
     for sim in sims:
+      if matrix:
+        if hash(sim) not in mat_dict["cols"]:
+            n_col += 1
+            mat_dict["cols"].update({hash(sim): n_col})
+      sim_bdy = Boundary()  # Boundary of *this* k-simplex.
       if verbose:
         print("simplex: ", sim)
       for p in sim.points:
@@ -181,11 +194,28 @@ class ASC:
         if verbose:
           print("face: ", face)
         bdy.xor(face)
+        sim_bdy.xor(face)
+      if matrix:
+        for b_sim in sim_bdy.simplices:
+          if hash(b_sim) not in mat_dict["rows"]:
+            n_row += 1
+            mat_dict["rows"].update({hash(b_sim): n_row})
+          ones_r.append(mat_dict["rows"][hash(b_sim)])
+          ones_c.append(mat_dict["cols"][hash(sim)])
       if verbose:
         print()
+    if matrix:
+      if n_row >= 0 and n_col >= 0:
+        bdy_mat = z2array_zeros((n_row + 1, n_col + 1))
+        bdy_mat[ones_r, ones_c] = 1
+      if verbose:
+          print(bdy_mat)
+          print()
+      return bdy, bdy_mat
     return bdy
   
   # Computes and prints the boundary for each simplex separately
-  def display_simplex_boundaries(self, k=None, verbose=False):
+  # Consider if we should deprecate in favor of compute_boundary for whole ASC.
+  def display_simplex_boundaries(self, k=None, matrix=False, verbose=False):
     for sim in self.k_simplices(k):
-      print("Boundary of", sim, ":", sim.compute_boundary(verbose=verbose))
+      print("Boundary of", sim, ":", sim.compute_boundary(matrix=matrix, verbose=verbose))
