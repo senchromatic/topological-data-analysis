@@ -182,7 +182,7 @@ class ASC:
     n_row = -1
     for sim in sims:
       if matrix:
-        if not hash(sim) in mat_dict["cols"]:
+        if hash(sim) not in mat_dict["cols"]:
             n_col += 1
             mat_dict["cols"].update({hash(sim): n_col})
       sim_bdy = Boundary()  # Boundary of *this* k-simplex.
@@ -197,7 +197,7 @@ class ASC:
         sim_bdy.xor(face)
       if matrix:
         for b_sim in sim_bdy.simplices:
-          if not hash(b_sim) in mat_dict["rows"]:
+          if hash(b_sim) not in mat_dict["rows"]:
             n_row += 1
             mat_dict["rows"].update({hash(b_sim): n_row})
           ones_r.append(mat_dict["rows"][hash(b_sim)])
