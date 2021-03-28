@@ -222,7 +222,7 @@ class ASC:
       print("Boundary of", sim, ":", sim.compute_boundary(matrix=matrix, verbose=verbose))
 
 
-# Generates Vietoris-Rips complex of dimension k, with diameter threshold max_diam.
+# Generates Vietoris-Rips complex of dimension at most k, with diameter threshold max_diam.
 # Let P be the set of points, each equipped with coordinates and a dist_metric.
 # The same dist_metric should be used across all points.
 # Time complexity: O((k+1)^2 * |P|^(k+1))
