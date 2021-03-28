@@ -4,6 +4,7 @@ import metrics
 
 from copy import deepcopy
 from functools import total_ordering
+from itertools import combinations
 from sets import powerset
 from z2array import z2array_zeros
 
@@ -219,3 +220,24 @@ class ASC:
   def display_simplex_boundaries(self, k=None, matrix=False, verbose=False):
     for sim in self.k_simplices(k):
       print("Boundary of", sim, ":", sim.compute_boundary(matrix=matrix, verbose=verbose))
+
+
+# Generates Vietoris-Rips complex of dimension k, with diameter threshold max_diam.
+# Let P be the set of points, each equipped with coordinates and a dist_metric.
+# The same dist_metric should be used across all points.
+# Time complexity: O((k+1)^2 * |P|^(k+1))
+# Memory usage: O((k+1) * |P|^(k+1))
+def vietoris_rips(points, k, max_diam):
+  new_asc = ASC()
+  for d in range(k+1):  # for each dimension from 0 to k
+    for subset in combinations(points, d+1):
+      # diameter is the max distance between all pairs of points
+      diameter = 0.0
+      for pair in combinations(subset, 2):
+        diameter = max(diameter, pair[0].distance_to(pair[1]))
+        if diameter > max_diam:
+          break
+      if diameter > max_diam:
+        continue
+      new_asc.add_simplex(Simplex(points=subset))
+  return new_asc
