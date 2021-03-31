@@ -44,14 +44,6 @@ def point_comparison_test():
   print("Is the rabbit similar to a dolphin?", rabbit.similar_to(dolphin))
   print("Is the dolphin similar to an apple?", dolphin.similar_to(apple))
 
-# Create all k-simplices for a given metric and distance threshold
-def cech_complex(points, k):
-  pass  # TODO
-
-# Create all k-simplices for a given metric and distance threshold
-def vietoris_rips_complex(points, k):
-  pass  # TODO
-
 if __name__ == '__main__':
   # Point cloud
   create_organisms()

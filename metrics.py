@@ -9,6 +9,7 @@ def norm(x, order=None, axis=None, keepdims=False):
   return np.linalg.norm(x, order, axis, keepdims)
 
 # Reference: https://numpy.org/doc/stable/reference/generated/numpy.linalg.norm.html
+# Default: Euclidean distance (l^2)
 def induced_metric(a, b, order=None, axis=None, keepdims=False):
   return norm(a - b, order, axis, keepdims)
 
