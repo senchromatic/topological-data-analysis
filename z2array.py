@@ -178,17 +178,74 @@ def z2row_echelon(z2mat, copy_mat=True):
     return np.vstack([A[:1], np.hstack([A[1:, :1], B])])
 
 
-def z2rank(z2mat):
+def z2rank(z2mat, nullspace=True):
     """
     Count number of nonzero rows
     in row echelon form.
+
+    If matrix represents a linear transformation,
+    this is the rank of the image.
+
+    If nullspace=True, also returns the rank
+    of the nullspace of the transformation.
     """
     rrz2mat = z2row_echelon(z2mat)
     # Cast as integer to sum across rows quickly.
     row_sums_as_int = np.array(rrz2mat, dtype=np.int).sum(axis=1)
     # 0 rows will be the rows with 0 sums in the integer version.
     rank = len(row_sums_as_int[row_sums_as_int > 0])
+    if nullspace:
+        # Dimension of domain is the number of columns.
+        c = z2mat.shape[1]
+        # Rank-nullity theorem.
+        null_rank = c - rank
+        return rank, null_rank
     return rank
+
+
+def pivotcols_row_echelon(rez2mat):
+    """
+    Return indices of pivot columns
+    of input matrix. Expects input matrix
+    to already be in row echelon form.
+
+    The column indices returned are 0-indexed.
+
+    Relies on the fact that our GE function
+    z2row_echelon only does row exchanges
+    (no column exchanges).
+
+    The corresponding columns in the original
+    matrix (not row echelon) give a basis
+    for the image of the transformation.
+    """
+    # List of pivot indices we will return.
+    pivot_idxs = []
+    # Row in which last pivot was found.
+    # Set to -1 to avoid special handling for NoneType
+    # when checking for the first pivot, while handling 0-indexing.
+    #
+    # Using i,j convention for row and column indices.
+    last_pivot_i = -1
+    # Iterate through columns.
+    for j, col in enumerate(rez2mat.T):
+        # Iterate through entries in column.
+        for i, entry in enumerate(col):
+            # Zero entries are at the bottom.
+            if entry != 0:
+                # Index of lowest nonzero entry in
+                # this column.
+                lowest_nonzero_i = i
+        # If lowest nonzero entry in this column is
+        # in a row with a higher index (below) that of the previous pivot
+        # (or has an index higher than the initial dummy value of -1 for
+        # the first pivot), then this is a pivot column.
+        if lowest_nonzero_i > last_pivot_i:
+            # This is a pivot, so add column index to list.
+            pivot_idxs.append(j)
+            # Update our check.
+            last_pivot_i = lowest_nonzero_i
+    return pivot_idxs
 
 
 if __name__ == "__main__":
@@ -243,7 +300,7 @@ if __name__ == "__main__":
     function above.
     """
     rank_A = z2rank(A)
-    rank_A_ = 3
+    rank_A_ = (3, 1)
     b_pass_rankA = (rank_A == rank_A_)
     print(f"\nMatrix A:\n{A}")
     print(f"\nRank of matrix A: {rank_A} (should be {rank_A_})")
@@ -254,7 +311,7 @@ if __name__ == "__main__":
                  [0, 1, 0, 1],
                  [0, 0, 0, 1]])
     rank_B = z2rank(B)
-    rank_B_ = 4
+    rank_B_ = (4, 0)
     b_pass_rankB = (rank_B == rank_B_)
     print(f"\nMatrix B:\n{B}")
     print(f"Rank of matrix B: {rank_B} (should be {rank_B_})")
@@ -294,3 +351,5 @@ if __name__ == "__main__":
     print(f"\n\nArray 5:\n{M5}")
     print(f"\nRow echelon form:\n{rrM5}")
     print(f"\nRank: {rankM5}")
+    pivotcols_M5 = pivotcols_row_echelon(rrM5)
+    print(f"\nPivot columns of Array 5: {pivotcols_M5}")
