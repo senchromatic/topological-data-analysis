@@ -219,6 +219,7 @@ def pivotcols_row_echelon(rez2mat):
     matrix (not row echelon) give a basis
     for the image of the transformation.
     """
+    r = rez2mat.shape[0]  # Number of rows.
     # List of pivot indices we will return.
     pivot_idxs = []
     # Row in which last pivot was found.
@@ -245,6 +246,10 @@ def pivotcols_row_echelon(rez2mat):
             pivot_idxs.append(j)
             # Update our check.
             last_pivot_i = lowest_nonzero_i
+        # If we have found the last possible pivot,
+        # we can stop searching for more.
+        if last_pivot_i == r - 1:
+            break
     return pivot_idxs
 
 
