@@ -251,7 +251,9 @@ class ASC:
     if store_matrix:
       if n_row >= 0 and n_col >= 0:
         self.boundary_matrix[k] = z2array_zeros((n_row + 1, n_col + 1))
-        self.boundary_matrix[k][ones_r, ones_c] = 1
+        # Boundary matrix of 0-simplices should be all zeros.
+        if k > 0:
+          self.boundary_matrix[k][ones_r, ones_c] = 1
       if verbose:
           print(self.boundary_matrix[k])
           print()
