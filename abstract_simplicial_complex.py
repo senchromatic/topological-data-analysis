@@ -6,7 +6,7 @@ from copy import deepcopy
 from functools import total_ordering
 from itertools import combinations
 from sets import powerset
-from z2array import z2array_zeros
+from z2array import z2array_zeros, z2_null_basis
 
 
 # A point must have a unique identifier or a (partial) coordinate vector as representation.
@@ -161,28 +161,32 @@ class ASC:
   def add_simplex(self, sim):
     self.simplices.add(sim)
 
-  # Computes the boundary for all simplices of dimension k.
+  # Computes the boundary for all simplices of dimension at most k.
   # If k is unspecified, the ASC's dimension will be used by default.
+  # If store_matrix option is True, a z2array is stored as self.boundary_matrix;
+  #  an ordered list of simplices (one per column) is stored as self.column_simplices.
   # Algorithm: For each simplex, take one point at a time
   #            and delete it to form a face, then add this face to the boundary.
   # Let S be the collection of simplices.
   # Time complexity: O(k|S|)
   # Memory usage: O(k|S|)
-  # If matrix option is True, returns boundary matrix (z2array).
-  def compute_boundary(self, k=None, matrix=False, verbose=False):
+  def compute_boundary(self, k=None, store_matrix=True, verbose=False):
     if k is None:
       k = self.highest_dimension()
     
     sims = self.k_simplices(k)
     bdy = Boundary()  # Boundary of all k-simplices.
     mat_dict = {"rows": {}, "cols": {}}  # Matches indices to simplex hashes.
-    bdy_mat = None
     ones_r = []  # Row indices of positive entries.
     ones_c = []  # Column indices of positive entries.
     n_col = -1
     n_row = -1
+    if store_matrix:
+      self.boundary_matrix = None
+      self.column_simplices = []
     for sim in sims:
-      if matrix:
+      if store_matrix:
+        self.column_simplices.append(sim)
         if hash(sim) not in mat_dict["cols"]:
             n_col += 1
             mat_dict["cols"].update({hash(sim): n_col})
@@ -196,7 +200,7 @@ class ASC:
           print("face: ", face)
         bdy.xor(face)
         sim_bdy.xor(face)
-      if matrix:
+      if store_matrix:
         for b_sim in sim_bdy.simplices:
           if hash(b_sim) not in mat_dict["rows"]:
             n_row += 1
@@ -205,14 +209,13 @@ class ASC:
           ones_c.append(mat_dict["cols"][hash(sim)])
       if verbose:
         print()
-    if matrix:
+    if store_matrix:
       if n_row >= 0 and n_col >= 0:
-        bdy_mat = z2array_zeros((n_row + 1, n_col + 1))
-        bdy_mat[ones_r, ones_c] = 1
+        self.boundary_matrix = z2array_zeros((n_row + 1, n_col + 1))
+        self.boundary_matrix[ones_r, ones_c] = 1
       if verbose:
-          print(bdy_mat)
+          print(self.boundary_matrix)
           print()
-      return bdy, bdy_mat
     return bdy
   
   # Computes and prints the boundary for each simplex separately
@@ -220,7 +223,27 @@ class ASC:
   def display_simplex_boundaries(self, k=None, matrix=False, verbose=False):
     for sim in self.k_simplices(k):
       print("Boundary of", sim, ":", sim.compute_boundary(matrix=matrix, verbose=verbose))
-
+  
+  # After self.compute_boundary(...) has been called, we can obtain the kernel of the boundary map
+  # as the nullspace of the boundary matrix which is stored in this object.
+  def extract_cycles(self, verbose=False):
+    null_basis = z2_null_basis(self.boundary_matrix)
+    all_cycles = set()
+    # For each basis vector
+    for column in null_basis.T:
+      new_cycle = Boundary()
+      # For each coordinate index
+      for idx, val in enumerate(column):
+        if val == 0:
+          continue
+        new_cycle.xor(self.column_simplices[idx])
+      # Add non-empty cycles to the return value (set), and optionally print to stdout
+      if new_cycle.simplices:
+        if verbose:
+          print(new_cycle)
+        all_cycles.add(new_cycle)
+    return all_cycles
+        
 
 # Generates Vietoris-Rips complex of dimension k, with diameter threshold max_diam.
 # Let P be the set of points, each equipped with coordinates and a dist_metric.
