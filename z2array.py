@@ -175,7 +175,7 @@ def z2row_echelon(z2mat, copy_mat=True):
     B = z2row_echelon(A[1:, 1:],
                       copy_mat=False)
 
-    return np.vstack([A[:1], np.hstack([A[1:, :1], B])])
+    return z2array(np.vstack([A[:1], np.hstack([A[1:, :1], B])]))
 
 
 def z2rank(z2mat, nullspace=True):
@@ -271,7 +271,7 @@ def z2_image_basis(z2mat, idxs=False):
     """
     rez2mat = z2row_echelon(z2mat, copy_mat=True)
     pivot_idxs = pivotcol_idxs_row_echelon(rez2mat)
-    pivotcols = z2mat[:, pivot_idxs] 
+    pivotcols = z2mat[:, pivot_idxs]
     if idxs:
         return pivotcols, pivot_idxs
     return pivotcols
@@ -318,7 +318,7 @@ def z2_null_basis(z2mat):
     # Transpose of the expanded part of the zero rows is a basis
     # for the null space of the original matrix.
     rhs_zero_rows = reexptrez2mat[zero_row_idxs, r:]
-    nullspace_basis = rhs_zero_rows.T
+    nullspace_basis = z2array(rhs_zero_rows.T)
 
     return nullspace_basis
 
