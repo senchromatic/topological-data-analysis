@@ -3,7 +3,7 @@
 
 from abstract_simplicial_complex import Point, Simplex, Boundary, ASC
 from enum import Enum
-from z2array import Z2array, z2_null_basis
+from z2array import Z2array, z2_image_basis, z2_null_basis
 
 import numpy as np
 
@@ -140,17 +140,26 @@ def create_asc_b(verbose=False):
 # Computes boundaries at each dimension, outputs boundary matrix and cycles
 def process_asc(my_asc, simplex_name):
   print("------------- Abstract Simplicial Complex " + simplex_name + " -------------")
+  # Pre-compute boundary matrices to be used in computing homologies
+  for k in range(1+my_asc.highest_dimension()):
+    my_asc.compute_boundary(k=k, store_matrix=True, verbose=False)
   for k in range(my_asc.highest_dimension()):
-    print("\nBoundary over " + str(k+1) + "-simplices in entire abstract simplicial complex " + simplex_name + ":")
-    print(my_asc.compute_boundary(k=k+1))
-    # print("\nBoundary for each " + str(k+1) + "-simplex, computed separately:")
-    # my_asc.display_simplex_boundaries(k=k+1)
-    my_asc.compute_boundary(k=k+1, store_matrix=True, verbose=False)
-    print("\nMatrix of boundary operator on " + str(k+1) + "-simplices:")
-    print(my_asc.boundary_matrix)
-    print("\nCycles of " + str(k+1) + "-simplices:")
-    if not my_asc.extract_cycles(verbose=True):
+    # print("\nBoundary over " + str(k) + "-simplices in entire abstract simplicial complex " + simplex_name + ":")
+    # print(my_asc.compute_boundary(k=k))
+    # print("\nBoundary for each " + str(k) + "-simplex, computed separately:")
+    # my_asc.display_simplex_boundaries(k=k)
+    print("\nMatrix of boundary map on " + str(k) + "-simplices:")
+    print(my_asc.boundary_matrix[k])
+    print("\nCycles from kernel of boundary for " + str(k) + "-simplices:")
+    if not my_asc.extract_kernel_cycles(k, verbose=True):
       print("[None]")
+    if k+1 <= my_asc.highest_dimension():
+        print("\nImage space from boundary matrix on " + str(k+1) + "-simplices:")
+        if not my_asc.extract_boundary_image(k+1, verbose=True):
+            print("[None]")
+        print("\n" + str(k) + "-homology:")
+        print(my_asc.compute_homology(k))
+    print()
   print("\n")
 
 
