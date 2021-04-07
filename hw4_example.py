@@ -144,21 +144,24 @@ def process_asc(my_asc, simplex_name):
   for k in range(1+my_asc.highest_dimension()):
     my_asc.compute_boundary(k=k, store_matrix=True, verbose=False)
   for k in range(my_asc.highest_dimension()):
-    # print("\nBoundary over " + str(k) + "-simplices in entire abstract simplicial complex " + simplex_name + ":")
+    dim = str(k)
+    # print("\nBoundary over " + dim + "-simplices in entire abstract simplicial complex " + simplex_name + ":")
     # print(my_asc.compute_boundary(k=k))
-    # print("\nBoundary for each " + str(k) + "-simplex, computed separately:")
+    # print("\nBoundary for each " + dim + "-simplex, computed separately:")
     # my_asc.display_simplex_boundaries(k=k)
-    print("\nMatrix of boundary map on " + str(k) + "-simplices:")
+    print("\nMatrix of boundary map on " + dim + "-simplices:")
     print(my_asc.boundary_matrix[k])
-    print("\nCycles from kernel of boundary for " + str(k) + "-simplices:")
+    print("\nCycles from kernel of boundary for " + dim + "-simplices:")
     if not my_asc.extract_kernel_cycles(k, verbose=True):
       print("[None]")
     if k+1 <= my_asc.highest_dimension():
         print("\nImage space from boundary matrix on " + str(k+1) + "-simplices:")
         if not my_asc.extract_boundary_image(k+1, verbose=True):
             print("[None]")
-        print("\n" + str(k) + "-homology:")
-        print(my_asc.compute_homology(k))
+        print("\n" + dim + "-homology:")
+        homology = my_asc.compute_homology(k)
+        print(homology)
+        print("Dimension of " + dim + "-homology: ", homology.size())
     print()
   print("\n")
 

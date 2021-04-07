@@ -286,6 +286,7 @@ class ASC:
         all_cycles.add(new_cycle)
     if verbose:
       print(cc)
+      print("Rank of kernel: ", z2rank(null_basis, nullspace=False))
     return all_cycles
   
   # After self.compute_boundary(...) has been called, for a given dimension k,
@@ -311,6 +312,7 @@ class ASC:
         all_boundaries.add(new_boundary)
     if verbose:
       print(cc)
+      print("Rank of image: ", z2rank(image_basis, nullspace=False))
     return all_boundaries
 
   # After self.compute_boundary(...) has been called for dimensions k and k+1,
