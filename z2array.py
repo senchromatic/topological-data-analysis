@@ -175,20 +175,152 @@ def z2row_echelon(z2mat, copy_mat=True):
     B = z2row_echelon(A[1:, 1:],
                       copy_mat=False)
 
-    return np.vstack([A[:1], np.hstack([A[1:, :1], B])])
+    return z2array(np.vstack([A[:1], np.hstack([A[1:, :1], B])]))
 
 
-def z2rank(z2mat):
+def z2rank(z2mat, nullspace=True):
     """
-    Count number of nonzero rows
-    in row echelon form.
+    Count number of nonzero rows in the row echelon
+    form of the input Z2 matrix.
+
+    If the matrix represents a linear transformation,
+    this is the dimension of the image.
+
+    If nullspace=True, also returns the dimension
+    of the null space of the transformation
+    (True by default).
     """
     rrz2mat = z2row_echelon(z2mat)
     # Cast as integer to sum across rows quickly.
     row_sums_as_int = np.array(rrz2mat, dtype=np.int).sum(axis=1)
-    # 0 rows will be the rows with 0 sums in the integer version.
+    # Zero rows will be the rows with 0 sums in the integer version.
     rank = len(row_sums_as_int[row_sums_as_int > 0])
+    if nullspace:
+        # Dimension of domain is the number of columns.
+        c = z2mat.shape[1]
+        # Rank-nullity theorem.
+        null_rank = c - rank
+        return rank, null_rank
     return rank
+
+
+def pivotcol_idxs_row_echelon(rez2mat):
+    """
+    Returns the indices of the pivot columns
+    of the input matrix. Expects input matrix
+    to already be in row echelon form.
+
+    The column indices returned are 0-indexed.
+
+    Relies on the fact that our GE function
+    z2row_echelon only does row exchanges
+    (no column exchanges).
+
+    The corresponding columns in the original
+    matrix (not row echelon) give a basis
+    for the image of the transformation.
+    This fact is used in z2_image_basis,
+    which relies on this function.
+    """
+    r = rez2mat.shape[0]  # Number of rows.
+    # List of pivot indices we will return.
+    pivot_idxs = []
+    # Row in which last pivot was found.
+    # Set to -1 to avoid special handling for NoneType
+    # when checking for the first pivot, while handling 0-indexing.
+    #
+    # Using i,j convention for row and column indices.
+    last_pivot_i = -1
+    # Iterate through columns.
+    for j, col in enumerate(rez2mat.T):
+        # Iterate through entries in column.
+        lowest_nonzero_i = None
+        for i, entry in enumerate(col):
+            # Zero entries are at the bottom.
+            if entry != 0:
+                # Index of lowest nonzero entry in
+                # this column.
+                lowest_nonzero_i = i
+        # If lowest nonzero entry in this column is
+        # in a row with a higher index (below) that of the previous pivot
+        # (or has an index higher than the initial dummy value of -1 for
+        # the first pivot), then this is a pivot column.
+        if lowest_nonzero_i is not None and (lowest_nonzero_i > last_pivot_i):
+            # This is a pivot, so add column index to list.
+            pivot_idxs.append(j)
+            # Update our check.
+            last_pivot_i = lowest_nonzero_i
+        # If we have found the last possible pivot,
+        # we can stop searching for more.
+        if last_pivot_i == r - 1:
+            break
+    return pivot_idxs
+
+
+def z2_image_basis(z2mat, idxs=False):
+    """
+    Returns a basis for the image space of the linear
+    transformation represented by the input Z2 matrix
+    (original matrix not in row echelon form).
+
+    The return is a Z2 matrix whose columns are
+    a basis for the image of the transformation.
+
+    Optionally, also returns indices of the columns
+    that give the basis if idxs=True (False by default).
+    """
+    rez2mat = z2row_echelon(z2mat, copy_mat=True)
+    pivot_idxs = pivotcol_idxs_row_echelon(rez2mat)
+    pivotcols = z2mat[:, pivot_idxs]
+    if idxs:
+        return pivotcols, pivot_idxs
+    return pivotcols
+
+
+def z2_null_basis(z2mat):
+    """
+    Returns a basis for the null space of the linear
+    transformation represented by the input Z2 matrix
+    (original matrix not in row echelon form).
+
+    The return is a Z2 matrix whose columns are
+    a basis for the null space of the transformation.
+
+    If the rank of the null space is 0, returns the
+    zero vector of the domain.
+    """
+    r, c = z2mat.shape
+    # Do GE on the original matrix.
+    rez2mat = z2row_echelon(z2mat, copy_mat=True)
+    # Get indices of pivot columns.
+    pivot_idxs = pivotcol_idxs_row_echelon(rez2mat)
+    # If matrix has full column rank, the kernel is just
+    # the zero vector of the domain.
+    if len(pivot_idxs) == c:
+        return z2array_zeros((c, 1))
+
+    # Otherwise, we continue below. (Not optimized)
+
+    # Take the transpose of the reduced matrix.
+    trez2mat = rez2mat.T
+    # Identity matrix.
+    id = z2array(np.eye(c, dtype=np.int32))
+    # Expand the transpose of the reduced matrix.
+    exptrez2mat = z2array(np.concatenate([trez2mat, id], axis=1))
+    # Do GE again on this expanded matrix.
+    reexptrez2mat = z2row_echelon(exptrez2mat, copy_mat=False)
+    # Get indices of the zero rows (nonexpanded part).
+    lhs = reexptrez2mat[:, 0:r]
+    # Cast as integer to sum across rows quickly.
+    lhs_row_sums = np.array(lhs, dtype=np.int).sum(axis=1)
+    # Zero rows will be the rows with 0 sums in the integer version.
+    zero_row_idxs = np.where(lhs_row_sums == 0)[0].tolist()
+    # Transpose of the expanded part of the zero rows is a basis
+    # for the null space of the original matrix.
+    rhs_zero_rows = reexptrez2mat[zero_row_idxs, r:]
+    nullspace_basis = z2array(rhs_zero_rows.T)
+
+    return nullspace_basis
 
 
 if __name__ == "__main__":
@@ -243,7 +375,7 @@ if __name__ == "__main__":
     function above.
     """
     rank_A = z2rank(A)
-    rank_A_ = 3
+    rank_A_ = (3, 1)
     b_pass_rankA = (rank_A == rank_A_)
     print(f"\nMatrix A:\n{A}")
     print(f"\nRank of matrix A: {rank_A} (should be {rank_A_})")
@@ -254,7 +386,7 @@ if __name__ == "__main__":
                  [0, 1, 0, 1],
                  [0, 0, 0, 1]])
     rank_B = z2rank(B)
-    rank_B_ = 4
+    rank_B_ = (4, 0)
     b_pass_rankB = (rank_B == rank_B_)
     print(f"\nMatrix B:\n{B}")
     print(f"Rank of matrix B: {rank_B} (should be {rank_B_})")
@@ -294,3 +426,65 @@ if __name__ == "__main__":
     print(f"\n\nArray 5:\n{M5}")
     print(f"\nRow echelon form:\n{rrM5}")
     print(f"\nRank: {rankM5}")
+
+    print("\n\n@@@@@@@@@@@@@@@@@@@@@@@@@@")
+    print("Visual check for bases:")
+    print("@@@@@@@@@@@@@@@@@@@@@@@@@@")
+    print(f"\nTesting bases with Array 1:\n{M1}")
+    print(f"\nRow echelon form:\n{rrM1}")
+    print(f"\nRank: {rankM1}")
+    basis_M1, pivotcol_idxs_M1 = z2_image_basis(M1, idxs=True)
+    print(f"\nPivot columns of Array 1: {pivotcol_idxs_M1}")
+    print(
+        f"\nBasis for image of linear transformation represented by Array 1:\n{basis_M1}")
+    null_basisM1 = z2_null_basis(M1)
+    print(f"\nBasis for null space:\n{null_basisM1}")
+    print("\n Multiplying vectors in the null space of Array 1 by Array 1:")
+    print(M1 @ null_basisM1)
+
+    print(f"\nTesting bases with Array 2:\n{M2}")
+    print(f"\nRow echelon form:\n{rrM2}")
+    print(f"\nRank: {rankM2}")
+    basis_M2, pivotcol_idxs_M2 = z2_image_basis(M2, idxs=True)
+    print(f"\nPivot columns of Array 2: {pivotcol_idxs_M2}")
+    print(
+        f"\nBasis for image of linear transformation represented by Array 2:\n{basis_M2}")
+    null_basisM2 = z2_null_basis(M2)
+    print(f"\nBasis for null space:\n{null_basisM2}")
+    print("\n Multiplying vectors in the null space of Array 2 by Array 2:")
+    print(M2 @ null_basisM2)
+
+    print(f"\nTesting bases with Array 3:\n{M3}")
+    print(f"\nRow echelon form:\n{rrM3}")
+    print(f"\nRank: {rankM3}")
+    basis_M3, pivotcol_idxs_M3 = z2_image_basis(M3, idxs=True)
+    print(f"\nPivot columns of Array 3: {pivotcol_idxs_M3}")
+    print(f"\nBasis for image of linear transformation represented by Array 3:\n{basis_M3}")
+    null_basisM3 = z2_null_basis(M3)
+    print(f"\nBasis for null space:\n{null_basisM3}")
+    print("\n Multiplying vectors in the null space of Array 3 by Array 3:")
+    print(M3 @ null_basisM3)
+
+    print(f"\nTesting bases with Array 4:\n{M4}")
+    print(f"\nRow echelon form:\n{rrM4}")
+    print(f"\nRank: {rankM4}")
+    basis_M4, pivotcol_idxs_M4 = z2_image_basis(M4, idxs=True)
+    print(f"\nPivot columns of Array 4: {pivotcol_idxs_M4}")
+    print(
+        f"\nBasis for image of linear transformation represented by Array 4:\n{basis_M4}")
+    null_basisM4 = z2_null_basis(M4)
+    print(f"\nBasis for null space:\n{null_basisM4}")
+    print("\n Multiplying vectors in the null space of Array 4 by Array 4:")
+    print(M4 @ null_basisM4)
+
+    print(f"\nTesting bases with Array 5:\n{M5}")
+    print(f"\nRow echelon form:\n{rrM5}")
+    print(f"\nRank: {rankM5}")
+    basis_M5, pivotcol_idxs_M5 = z2_image_basis(M5, idxs=True)
+    print(f"\nPivot columns of Array 5: {pivotcol_idxs_M5}")
+    print(
+        f"\nBasis for image of linear transformation represented by Array 5:\n{basis_M5}")
+    null_basisM5 = z2_null_basis(M5)
+    print(f"\nBasis for null space:\n{null_basisM5}")
+    print("\n Multiplying vectors in the null space of Array 5 by Array 5:")
+    print(M5 @ null_basisM5)
