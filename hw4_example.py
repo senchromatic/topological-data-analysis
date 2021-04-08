@@ -66,11 +66,13 @@ def two_triangles_test(verbose=True):
 
 # Homeomorphic to S^2 (sphere in R^3)
 def hollow_tetrahedron_test(verbose=True):
+    # Spanning C_0
     w = Point('w')
     x = Point('x')
     y = Point('y')
     z = Point('z')
 
+    # Spanning C_1
     wx = Simplex(points={w, x})
     wy = Simplex(points={w, y})
     wz = Simplex(points={w, z})
@@ -78,6 +80,7 @@ def hollow_tetrahedron_test(verbose=True):
     xz = Simplex(points={x, z})
     yz = Simplex(points={y, z})
 
+    # Spanning C_2
     wxy = Simplex(points={w, x, y})
     wxz = Simplex(points={w, x, z})
     wyz = Simplex(points={w, y, z})
@@ -181,7 +184,7 @@ def process_asc(my_asc, simplex_name):
     # print("\nBoundary for each " + dim + "-simplex, computed separately:")
     # my_asc.display_simplex_boundaries(k=k)
     print("\nMatrix of boundary map on " + dim + "-simplices:")
-    print(my_asc.boundary_matrix[k] if k > 0 else "[[]]")
+    print(my_asc.boundary_matrix[k])
     print("\nCycles from kernel of boundary for " + dim + "-simplices:")
     my_asc.extract_kernel_cycles(k, verbose=True)
     print("\nImage space from boundary matrix on " + str(k+1) + "-simplices:")

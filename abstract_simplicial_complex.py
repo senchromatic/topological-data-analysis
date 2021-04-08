@@ -255,7 +255,8 @@ class ASC:
     if store_matrix:
       if n_row >= 0 and n_col >= 0:
         self.boundary_matrix[k] = z2array_zeros((n_row + 1, n_col + 1))
-        # Boundary matrix of 0-simplices should be all zeros (the zero vectors are omitted).
+        # The boundary matrix of 0-simplices contains a redundant zero row for sake of computational,
+        #  well-defined behavior (the row of ones corresponding to the zero vector in the image is omitted).
         if k > 0:
           self.boundary_matrix[k][ones_r, ones_c] = 1
       if verbose:
