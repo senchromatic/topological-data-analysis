@@ -146,8 +146,8 @@ class ChainCollection():
   def __init__(self):
     self.chains = set()
   
-  def __str__(self, sep=' ;\n '):
-    return '{' + sep.join(sorted(map(str, self.chains))) + '}'
+  def __str__(self, sep=';\n '):
+    return '{' + sep.join(sorted(map(lambda c : '[' + str(c) + ']', self.chains))) + '}'
   
   def add(self, chain):
     self.chains.add(chain)
