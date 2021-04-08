@@ -1,8 +1,12 @@
+## LeDuc, Pereira, Zhang
+#This is a first hack at working with the project data using the KL divergence to measure the distance
+#between two probability distributions of the depth of minimum sound speed.
 import abstract_simplicial_complex as asc
 import z2array as z2
 import numpy as np
+import sets as st
 import scipy.interpolate as sci
-
+import metrics as met
 import pylab as pl
 import datetime as dt
 import pandas as pd
@@ -12,6 +16,7 @@ data1 = np.genfromtxt('data/MITprof_mar2016_argo0708.nc.csv', delimiter = ',')
 data2 = np.genfromtxt('data/MITprof_mar2016_argo0910.nc.csv', delimiter = ',')
 
 data = np.concatenate((data1, data2[:,2:]), axis = 1)
+data = data[:,0:500]#Just for testing purposes to make sure everything goes through okay
 ##breakpoint()
 dates = pd.to_datetime( data[2,1:]-719529, unit='D')
 depths = data[3:, 0]
@@ -44,7 +49,10 @@ for ndx in range(0, len(theseLats.transpose())):
     lonNdcs = np.where(lons == theseLons[0,ndx])
     ndcs = np.intersect1d( latNdcs, lonNdcs )
     if len(np.unique(minDepths[ndcs]))>=4:
+        #If there are enough points to make a distribution
         [x,y] = sf.ecdf(minDepths[ndcs])
+        # Interpolate the ecdf onto the depth grid we started with, then adjust the
+        # values as needed. We need these CDFs to measure the 
         f = sci.interp1d( x,y, fill_value="extrapolate")
         yi = f(depths)
         tooLow = yi<0
@@ -54,6 +62,7 @@ for ndx in range(0, len(theseLats.transpose())):
         yi[tooHigh] = 1
         spatialDist[:,ndx] = yi
     else:
+        #No appropriate dists in the box
         theseLats[0,ndx] = -1000
         theseLons[0,ndx] = -1000
 [foo,mask] = np.where(theseLats>-1000)
@@ -65,6 +74,6 @@ distMat = np.zeros([len(maskedLats), len(maskedLats)])
 
 for ii in range(0,len(maskedLats)):
     for jj in range(ii+1, len(maskedLats)):
-        distMat[ii,jj] = sf.SymKL(maskedDists[:,ii], maskedDists[:,jj])
+        distMat[ii,jj] = met.sym_kl(maskedDists[:,ii], maskedDists[:,jj])
         distMat[jj,ii] = distMat[ii,jj]
 

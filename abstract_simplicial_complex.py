@@ -1,4 +1,5 @@
-# Defines a Point, Simplex, and ASC (abstract simplicial complex).
+# Zhang, Pereira, LeDuc
+# Defines a Point, Simplex, and ASC (abstract simplicial complex). Contains functions for computing homologies, boundary maps, and VR complexes
 
 from copy import deepcopy
 from functools import total_ordering

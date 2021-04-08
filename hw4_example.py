@@ -1,4 +1,5 @@
-
+# Zhang, PEreira, LeDuc
+#This code is sued to do the work for homework 4
 # Computes non-oriented boundaries for p-chains
 
 from abstract_simplicial_complex import Point, Simplex, Boundary, ASC
@@ -142,8 +143,8 @@ def process_asc(my_asc, simplex_name):
   print("------------- Abstract Simplicial Complex " + simplex_name + " -------------")
   # Pre-compute boundary matrices to be used in computing homologies
   for k in range(1+my_asc.highest_dimension()):
-    my_asc.compute_boundary(k=k, store_matrix=True, verbose=False)
-  for k in range(my_asc.highest_dimension()):
+    my_asc.compute_boundary(k=k, store_matrix=True, verbose=True)
+  for k in range(1+my_asc.highest_dimension()):
     dim = str(k)
     # print("\nBoundary over " + dim + "-simplices in entire abstract simplicial complex " + simplex_name + ":")
     # print(my_asc.compute_boundary(k=k))
