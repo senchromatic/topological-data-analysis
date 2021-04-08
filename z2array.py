@@ -1,3 +1,5 @@
+#Zhang, Pereira, LeDuc
+#Code for doing matrix algebra in Z/2
 import numpy as np
 
 
