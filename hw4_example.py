@@ -64,6 +64,36 @@ def two_triangles_test(verbose=True):
   if verbose:
     print(asc.compute_boundary())
 
+# Homeomorphic to S^2 (sphere in R^3)
+def hollow_tetrahedron_test(verbose=True):
+    w = Point('w')
+    x = Point('x')
+    y = Point('y')
+    z = Point('z')
+
+    wx = Simplex(points={w, x})
+    wy = Simplex(points={w, y})
+    wz = Simplex(points={w, z})
+    xy = Simplex(points={x, y})
+    xz = Simplex(points={x, z})
+    yz = Simplex(points={y, z})
+
+    wxy = Simplex(points={w, x, y})
+    wxz = Simplex(points={w, x, z})
+    wyz = Simplex(points={w, y, z})
+    xyz = Simplex(points={x, y, z})
+
+    asc = ASC(simplices={
+        Simplex(points={w}), Simplex(points={x}), Simplex(points={y}), Simplex(points={z}),
+        wx, wy, wz, xy, xz, yz,
+        wxy, wxz, wyz, xyz
+    })
+    # print(asc)
+    
+    if verbose:
+        process_asc(asc, "Hollow Tetrahedron (S^2)")
+
+
 # Returns a new simplicial complex (labelled A, from homework assignment),
 # and prints debug statements if verbosity is enabled.
 def create_asc_a(verbose=False):
@@ -140,28 +170,26 @@ def create_asc_b(verbose=False):
 # Computes boundaries at each dimension, outputs boundary matrix and cycles
 def process_asc(my_asc, simplex_name):
   print("------------- Abstract Simplicial Complex " + simplex_name + " -------------")
+  # print("Dimension: ", my_asc.highest_dimension())
   # Pre-compute boundary matrices to be used in computing homologies
   for k in range(1+my_asc.highest_dimension()):
     my_asc.compute_boundary(k=k, store_matrix=True, verbose=False)
-  for k in range(my_asc.highest_dimension()):
+  for k in range(1+my_asc.highest_dimension()):
     dim = str(k)
     # print("\nBoundary over " + dim + "-simplices in entire abstract simplicial complex " + simplex_name + ":")
     # print(my_asc.compute_boundary(k=k))
     # print("\nBoundary for each " + dim + "-simplex, computed separately:")
     # my_asc.display_simplex_boundaries(k=k)
     print("\nMatrix of boundary map on " + dim + "-simplices:")
-    print(my_asc.boundary_matrix[k])
+    print(my_asc.boundary_matrix[k] if k > 0 else "[[]]")
     print("\nCycles from kernel of boundary for " + dim + "-simplices:")
-    if not my_asc.extract_kernel_cycles(k, verbose=True):
-      print("[None]")
-    if k+1 <= my_asc.highest_dimension():
-        print("\nImage space from boundary matrix on " + str(k+1) + "-simplices:")
-        if not my_asc.extract_boundary_image(k+1, verbose=True):
-            print("[None]")
-        print("\n" + dim + "-homology:")
-        homology = my_asc.compute_homology(k)
-        print(homology)
-        print("Dimension of " + dim + "-homology: ", homology.size())
+    my_asc.extract_kernel_cycles(k, verbose=True)
+    print("\nImage space from boundary matrix on " + str(k+1) + "-simplices:")
+    my_asc.extract_boundary_image(k+1, verbose=True)
+    print("\n" + dim + "-homology:")
+    homology = my_asc.compute_homology(k)
+    print(homology)
+    print("Dimension of " + dim + "-homology: ", homology.size())
     print()
   print("\n")
 
@@ -175,6 +203,7 @@ if __name__ == '__main__':
   # print("All organisms:", organisms)
   # point_comparison_test()
   # two_triangles_test()
+  # hollow_tetrahedron_test()
   
   asc_a = create_asc_a(verbose=False)
   asc_b = create_asc_b(verbose=False)

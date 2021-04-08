@@ -46,9 +46,9 @@ class Point:
   # Otherwise, compare by the arguments provided.
   def __eq__(self, other):
     have_names = not(self.name is None or other.name is None)
-    metric_comparable = not(self.coordinates is None or other.coordinates is None) and self.dist_metric == other.dist_metric
+    metric_comparable = all(b is not None for b in [self.coordinates, other.coordinates, self.dist_metric, other.dist_metric]) and self.dist_metric == other.dist_metric
     same_names = self.name == other.name
-    close_enough = self.similar_to(other)
+    close_enough = self.similar_to(other) if metric_comparable else None
     if have_names and metric_comparable:
       return same_names and close_enough
     if have_names:
@@ -145,7 +145,7 @@ class ChainCollection():
 
   def __init__(self):
     self.chains = set()
-  
+
   def __str__(self, sep=';\n '):
     return '{' + sep.join(sorted(map(lambda c : '[' + str(c) + ']', self.chains))) + '}'
   
@@ -155,6 +155,10 @@ class ChainCollection():
   def size(self):
     return len(self.chains)
 
+  def __bool__(self):
+    return self.size() >= 1
+  __nonzero__ = __bool__
+  
 # An abstract simplicial complex is a collection of simplices closed under the subset operation.
 class ASC:
   # simplices is a set
@@ -251,7 +255,7 @@ class ASC:
     if store_matrix:
       if n_row >= 0 and n_col >= 0:
         self.boundary_matrix[k] = z2array_zeros((n_row + 1, n_col + 1))
-        # Boundary matrix of 0-simplices should be all zeros.
+        # Boundary matrix of 0-simplices should be all zeros (the zero vectors are omitted).
         if k > 0:
           self.boundary_matrix[k][ones_r, ones_c] = 1
       if verbose:
@@ -269,6 +273,11 @@ class ASC:
   # we can obtain the kernel of the boundary map (nullspace of the boundary matrix)
   # using the boundary matrix, which is stored as a member variable of this object.
   def extract_kernel_cycles(self, k, verbose=False):
+    if k > self.highest_dimension() + 1:
+      if verbose:
+        print("{}")
+        print("Rank of kernel: 0")
+      return ChainCollection()
     null_basis = z2_null_basis(self.boundary_matrix[k])
     all_cycles = ChainCollection()
     if verbose:
@@ -295,6 +304,11 @@ class ASC:
   # we can obtain the image of the boundary map using the boundary matrix,
   # which is stored as a member variable of this object.
   def extract_boundary_image(self, k, verbose=False):
+    if k > self.highest_dimension():
+      if verbose:
+        print("{}")
+        print("Rank of image space: 0")
+      return ChainCollection()
     image_basis = z2_image_basis(self.boundary_matrix[k])
     all_boundaries = ChainCollection()
     if verbose:
@@ -314,7 +328,7 @@ class ASC:
         all_boundaries.add(new_boundary)
     if verbose:
       print(cc)
-      print("Rank of image: ", z2rank(image_basis, nullspace=False))
+      print("Rank of image space: ", z2rank(image_basis, nullspace=False))
     return all_boundaries
 
   # After self.compute_boundary(...) has been called for dimensions k and k+1,
