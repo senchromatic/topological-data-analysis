@@ -12,11 +12,17 @@ import datetime as dt
 import pandas as pd
 import statfuncs as sf
 
+def create_simplices(names, coords, metric):
+    a = asc.Simplex()
+    for ndx in range(len(names)):   
+        a.add_point(asc.Point(names[ndx], coords[:,ndx], metric))
+    return a
+
 data1 = np.genfromtxt('data/MITprof_mar2016_argo0708.nc.csv', delimiter = ',')
 data2 = np.genfromtxt('data/MITprof_mar2016_argo0910.nc.csv', delimiter = ',')
 
 data = np.concatenate((data1, data2[:,2:]), axis = 1)
-data = data[:,0:500]#Just for testing purposes to make sure everything goes through okay
+data = data[:,0:1000]#Just for testing purposes to make sure everything goes through okay
 ##breakpoint()
 dates = pd.to_datetime( data[2,1:]-719529, unit='D')
 depths = data[3:, 0]
@@ -71,9 +77,21 @@ maskedLons = theseLons[0,mask]
 maskedDists = spatialDist[:,mask]
 
 distMat = np.zeros([len(maskedLats), len(maskedLats)])
+a = 0.05
+c_a = np.sqrt(-np.log(a/2)*0.5)
 
+ksStat = c_a*np.sqrt(2/len(depths))#%Value the metric needs to exceed to reject the ks test null hypothesis at the a-lvl
 for ii in range(0,len(maskedLats)):
     for jj in range(ii+1, len(maskedLats)):
-        distMat[ii,jj] = met.sym_kl(maskedDists[:,ii], maskedDists[:,jj])
+        distMat[ii,jj] = met.ks_test(maskedDists[:,ii], maskedDists[:,jj])
         distMat[jj,ii] = distMat[ii,jj]
-
+   
+names = [str(maskedLats[ndx])+"deg N by "+str(maskedLons[ndx])+"deg E" for ndx in range(len(maskedLats))]
+simplicialComplex = create_simplices(names,maskedDists, met.ks_test)
+vrc = asc.vietoris_rips(simplicialComplex.points, 2, 0.5)
+print("2-implices:")
+for i in vrc.k_simplices(2):
+    print(i)
+print("\n\n\n1-simplices:")
+for i in vrc.k_simplices(1):
+    print(i)

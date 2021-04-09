@@ -18,7 +18,7 @@ def induced_metric(a, b, order=None, axis=None, keepdims=False):
 def close_enough(a, b, metric):
   return metric(a, b) <= DEFAULT_EPS
 
-def sym_kl(cdf1 , cdf2 ):
+def sym_kl(cdf1 , cdf2 , dx):
     #Note: This is a semi-metric as it doesn't satisfy the triangle inequality
     #Modified KL divergence to be symmetric
     #Input: two CDFs. First step is to take them and turn them into PDFs
@@ -37,3 +37,11 @@ def sym_kl(cdf1 , cdf2 ):
     p2 = np.sum(ent2[np.where(np.isfinite(ent2))])
    
     return 0.5*(p1+p2)
+
+def ks_test(cdf1, cdf2 ):
+  ## This is the common Kolmogorov-Smirnov test for the equality of two distributions.
+  #Based on the scipy implementation
+  #D = sup_x(|F1(x)-F2(x)|) Basically the L_inf metric but for CDFs
+  #Output 1 = result of the KS test.
+  diffs = np.abs(cdf1-cdf2)
+  return np.max(diffs)
