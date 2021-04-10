@@ -12,6 +12,9 @@ import datetime as dt
 import pandas as pd
 import statfuncs as sf
 
+# TODO: wrap code logic into a function, make this a parameter
+MIN_POINTS_IN_DISTRIBUTION = 4
+
 def create_simplices(names, coords, metric):
     a = asc.Simplex()
     for ndx in range(len(names)):   
@@ -54,7 +57,7 @@ for ndx in range(0, len(theseLats.transpose())):
     latNdcs = np.where(lats == theseLats[0,ndx])
     lonNdcs = np.where(lons == theseLons[0,ndx])
     ndcs = np.intersect1d( latNdcs, lonNdcs )
-    if len(np.unique(minDepths[ndcs]))>=4:
+    if len(np.unique(minDepths[ndcs])) >= MIN_POINTS_IN_DISTRIBUTION:
         #If there are enough points to make a distribution
         [x,y] = sf.ecdf(minDepths[ndcs])
         # Interpolate the ecdf onto the depth grid we started with, then adjust the
