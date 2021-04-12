@@ -1,3 +1,4 @@
+# Zhang, Pereira, LeDuc
 # A library for additional set operations beyond the Python standard library.
 
 from itertools import chain, combinations
