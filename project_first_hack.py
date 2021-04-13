@@ -166,27 +166,25 @@ def create_point_cloud(names, coords, metric):
 
 if __name__ == '__main__':
     sample_data, depths = read_raw_data(sample_size=TEST_SAMPLE_SIZE, sample_randomly=USE_RANDOM_SAMPLING)
-
+    
     dates, latitudes, longitudes, sound_speed_profiles = extract_features(sample_data)
-
+    
     grid_latitudes, grid_longitudes = locate_grid_boundaries(latitudes, longitudes)
     
     masked_latitudes, masked_longitudes, masked_cdf = compute_boxed_cdfs(latitudes, longitudes, grid_latitudes, grid_longitudes, sound_speed_profiles)
-
+    
     # TODO: investigate why masked_cdfs returned by compute_boxed_cdfs has 1 extra dimension compared to local variable in function
     masked_cdfs = masked_cdf[:, 0, :]
-
+    
     # distance_matrix = compute_pairwise_ks_statistics(masked_latitudes, masked_longitudes, masked_cdfs)
     
     # Generate an ASC based on Kolmogorov-Smirnov distances fed into Vietoris-Rips algorithm
     geographic_names = generate_geographic_names(masked_latitudes, masked_longitudes)
     point_cloud = create_point_cloud(geographic_names, masked_cdfs, ks_test)
-
+    
     for rr in np.arange(0.1, 1, 0.1):
         rips_asc = vietoris_rips(point_cloud, MAX_ASC_DIMENSION, rr)
         print("Radius = "+str(rr))
         # Print simplices
         for k in range(1,MAX_ASC_DIMENSION+1):
             rips_asc.compute_boundary(k)
-
-

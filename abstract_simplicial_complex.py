@@ -85,7 +85,6 @@ class Simplex:
     self.points = self.points | other_simplex.points
   
   def remove_point(self, existing_point):
-    
     self.points.remove(existing_point)
   
   def get_point_by_name(self, name):
@@ -210,7 +209,7 @@ class ASC:
   def compute_boundary(self, k=None, store_matrix=True, deterministic=True, verbose=False):
     if k is None:
       k = self.highest_dimension()
-
+    
     ordering = (lambda x : sorted(list(x))) if deterministic else (lambda x : x)
     
     sims = self.k_simplices(k)
