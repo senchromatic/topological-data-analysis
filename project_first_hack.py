@@ -97,7 +97,7 @@ def compute_boxed_cdfs(latitudes, longitudes, grid_latitudes, grid_longitudes, s
         
         # Compute empirical CDF on the depths
         quantiles, probabilities = ecdf(min_depths[box_indices])
-        breakpoint()
+
         # Interpolate the ecdf onto the depth grid we started with, then adjust the
         # values as needed. We need these CDFs to measure the distance between points. 
         interpolator = interp1d(quantiles, probabilities, fill_value="extrapolate")

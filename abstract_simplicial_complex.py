@@ -85,6 +85,7 @@ class Simplex:
     self.points = self.points | other_simplex.points
 
   def remove_point(self, existing_point):
+    
     self.points.remove(existing_point)
   
   def get_point_by_name(self, name):
@@ -387,7 +388,6 @@ class ASC:
       independent_coordinates = adjoin
       homology.add(cycle)
     return homology
-
 
 # Generates Vietoris-Rips complex of dimension k, with diameter threshold max_diam.
 # Let P be the set of points, each equipped with coordinates and a dist_metric.
