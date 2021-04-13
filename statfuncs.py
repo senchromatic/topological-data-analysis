@@ -15,5 +15,5 @@ def ecdf(sample):
     # Take the cumulative sum of the counts and divide by the sample size to
     # get the cumulative probabilities between (0, 1]
     cumprob = np.cumsum(counts).astype(np.double) / sample.size
-    
+
     return quantiles, cumprob
