@@ -83,7 +83,7 @@ class Simplex:
   
   def add_points(self, other_simplex):
     self.points = self.points | other_simplex.points
-
+  
   def remove_point(self, existing_point):
     
     self.points.remove(existing_point)
@@ -406,5 +406,5 @@ def vietoris_rips(points, k, max_diam):
           break
       if diameter > max_diam:
         continue
-      new_asc.add_simplex(Simplex(points=subset))
+      new_asc.add_simplex(Simplex(points=set(subset)))
   return new_asc
