@@ -1,19 +1,20 @@
 ## LeDuc, Pereira, Zhang
 # This is a first hack at working with the project data using the KL divergence to measure the distance
 # between two probability distributions of the depth of minimum sound speed.
-
+import numpy as np
+import pandas as pd
+import pylab as pl # This gets used a lot I promise
 from abstract_simplicial_complex import Point, Simplex, vietoris_rips
 from metrics import ks_test
 from random import sample, seed
 from scipy.interpolate import interp1d
 from statfuncs import ecdf
 
-import numpy as np
-import pandas as pd
+
 
 # Global constants (bad)
 # TODO: move these into a config file?
-USE_RANDOM_SAMPLING = False  # Read a random sample of points from the input data
+USE_RANDOM_SAMPLING = True  # Read a random sample of points from the input data
 MIN_POINTS_FOR_KL_DIVERGENCE = 4  # Minimum number of points needed to compute KL divergence
 TEST_SAMPLE_SIZE = 1000  # Number of points to extract from dataset (non-random sampling)
 MIN_SIGNIFICANCE_LEVEL = 0.05  # Used in Kolmogorov-Smirnov test
@@ -25,6 +26,7 @@ def read_raw_data(sample_size=None, sample_randomly=True, random_seed=0):
     data1 = np.genfromtxt('data/MITprof_mar2016_argo0708.nc.csv', delimiter = ',')
     data2 = np.genfromtxt('data/MITprof_mar2016_argo0910.nc.csv', delimiter = ',')
     data = np.concatenate((data1, data2[:, 2:]), axis = 1)
+    depths = data[3:,0]
     N = data.shape[1]  # total number of data points
     # Choose a subset of points to return, if sample_size is specified
     if (sample_size is not None) and (sample_size < N):
@@ -34,7 +36,7 @@ def read_raw_data(sample_size=None, sample_randomly=True, random_seed=0):
         else:
             selected_indices = range(sample_size)
         data = data[:, selected_indices]
-    return data
+    return data, depths
 
 # Preprocess data to extract dates, ocean depths, latitudes, longitudes, and sound speed profiles
 def extract_features(data):
@@ -42,14 +44,14 @@ def extract_features(data):
     dates = pd.to_datetime(data[2, 1:] - NUM_DAYS_TO_UNIX_EPOCH, unit='D')
     
     # Spatial dimensions
-    depths = data[3:, 0]  # length: K
+
     latitudes = np.around(data[0, 1:] / 3) * 3  # length: N
     longitudes = np.around(data[1, 1:] / 3) * 3  # length: N
     
     # Sound speed profiles
     sound_speed_profiles = data[3:, 1:]  # dimensions: K x N
     
-    return dates, depths, latitudes, longitudes, sound_speed_profiles
+    return dates, latitudes, longitudes, sound_speed_profiles
 
 # Divide the Earth's surface into geographic (latitude/longitude) boxes,
 # and return the coordinates at the boundary of each box.
@@ -95,6 +97,7 @@ def compute_boxed_cdfs(latitudes, longitudes, grid_latitudes, grid_longitudes, s
         
         # Compute empirical CDF on the depths
         quantiles, probabilities = ecdf(min_depths[box_indices])
+        breakpoint()
         # Interpolate the ecdf onto the depth grid we started with, then adjust the
         # values as needed. We need these CDFs to measure the distance between points. 
         interpolator = interp1d(quantiles, probabilities, fill_value="extrapolate")
@@ -162,29 +165,28 @@ def create_point_cloud(names, coords, metric):
 
 
 if __name__ == '__main__':
-    sample_data = read_raw_data(sample_size=TEST_SAMPLE_SIZE, sample_randomly=USE_RANDOM_SAMPLING)
-    dates, depths, latitudes, longitudes, sound_speed_profiles = extract_features(sample_data)
-    
+    sample_data, depths = read_raw_data(sample_size=TEST_SAMPLE_SIZE, sample_randomly=USE_RANDOM_SAMPLING)
+
+    dates, latitudes, longitudes, sound_speed_profiles = extract_features(sample_data)
+
     grid_latitudes, grid_longitudes = locate_grid_boundaries(latitudes, longitudes)
     
     masked_latitudes, masked_longitudes, masked_cdf = compute_boxed_cdfs(latitudes, longitudes, grid_latitudes, grid_longitudes, sound_speed_profiles)
+
     # TODO: investigate why masked_cdfs returned by compute_boxed_cdfs has 1 extra dimension compared to local variable in function
     masked_cdfs = masked_cdf[:, 0, :]
-    
-    distance_matrix = compute_pairwise_ks_statistics(masked_latitudes, masked_longitudes, masked_cdfs)
+
+    # distance_matrix = compute_pairwise_ks_statistics(masked_latitudes, masked_longitudes, masked_cdfs)
     
     # Generate an ASC based on Kolmogorov-Smirnov distances fed into Vietoris-Rips algorithm
     geographic_names = generate_geographic_names(masked_latitudes, masked_longitudes)
     point_cloud = create_point_cloud(geographic_names, masked_cdfs, ks_test)
-    rips_asc = vietoris_rips(point_cloud, MAX_ASC_DIMENSION, 0.5)
-    
-    # Print simplices
-    for k in range(1, MAX_ASC_DIMENSION):
-        print("~~~~~~~~~~~~~~~~~~~~~")
-        print(str(k) + "-simplices:")
-        print("~~~~~~~~~~~~~~~~~~~~~")
-        
-        for sim in rips_asc.k_simplices(k):
-            print(sim)
-        
-        print("\n\n")
+
+    for rr in np.arange(0.1, 1, 0.1):
+        rips_asc = vietoris_rips(point_cloud, MAX_ASC_DIMENSION, rr)
+        print("Radius = "+str(rr))
+        # Print simplices
+        for k in range(1,MAX_ASC_DIMENSION+1):
+            rips_asc.compute_boundary(k)
+
+
