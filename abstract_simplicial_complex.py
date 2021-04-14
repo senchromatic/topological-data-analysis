@@ -410,12 +410,19 @@ class ASC:
 # Memory usage: O((k+1) * |P|^(k+1))
 def vietoris_rips(points, k, max_diam):
   new_asc = ASC()
+  distance_cache = {}
   for d in range(k+1):  # for each dimension from 0 to k
     for subset in combinations(points, d+1):
       # diameter is the max distance between all pairs of points
       diameter = 0.0
       for pair in combinations(subset, 2):
-        diameter = max(diameter, pair[0].distance_to(pair[1]))
+        # ensure that pair[0] <= pair[1]
+        if pair[0] > pair[1]:
+            pair = (pair[1], pair[0])
+        # update the cache if distance for this pair hasn't yet been computed
+        if pair not in distance_cache:
+          distance_cache[pair] = pair[0].distance_to(pair[1])
+        diameter = max(diameter, distance_cache[pair])
         if diameter > max_diam:
           break
       if diameter > max_diam:
