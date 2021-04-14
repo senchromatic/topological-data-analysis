@@ -83,7 +83,7 @@ class Simplex:
   
   def add_points(self, other_simplex):
     self.points = self.points | other_simplex.points
-
+  
   def remove_point(self, existing_point):
     self.points.remove(existing_point)
   
@@ -213,7 +213,7 @@ class ASC:
   def compute_boundary(self, k=None, store_matrix=True, deterministic=True, verbose=False):
     if k is None:
       k = self.highest_dimension()
-
+    
     ordering = (lambda x : sorted(list(x))) if deterministic else (lambda x : x)
     
     sims = self.k_simplices(k)
@@ -403,7 +403,6 @@ class ASC:
       homology.add(cycle)
     return homology
 
-
 # Generates Vietoris-Rips complex of dimension k, with diameter threshold max_diam.
 # Let P be the set of points, each equipped with coordinates and a dist_metric.
 # The same dist_metric should be used across all points.
@@ -421,5 +420,5 @@ def vietoris_rips(points, k, max_diam):
           break
       if diameter > max_diam:
         continue
-      new_asc.add_simplex(Simplex(points=subset))
+      new_asc.add_simplex(Simplex(points=set(subset)))
   return new_asc
