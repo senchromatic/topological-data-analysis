@@ -47,9 +47,9 @@ class Point:
   # Otherwise, compare by the arguments provided.
   def __eq__(self, other):
     have_names = not(self.name is None or other.name is None)
-    metric_comparable = not(self.coordinates is None or other.coordinates is None) and self.dist_metric == other.dist_metric
+    metric_comparable = all(b is not None for b in [self.coordinates, other.coordinates, self.dist_metric, other.dist_metric]) and self.dist_metric == other.dist_metric
     same_names = self.name == other.name
-    close_enough = self.similar_to(other)
+    close_enough = self.similar_to(other) if metric_comparable else None
     if have_names and metric_comparable:
       return same_names and close_enough
     if have_names:
@@ -146,9 +146,9 @@ class ChainCollection():
 
   def __init__(self):
     self.chains = set()
-  
-  def __str__(self, sep=' ;\n '):
-    return '{' + sep.join(sorted(map(str, self.chains))) + '}'
+
+  def __str__(self, sep=';\n '):
+    return '{' + sep.join(sorted(map(lambda c : '[' + str(c) + ']', self.chains))) + '}'
   
   def add(self, chain):
     self.chains.add(chain)
@@ -156,6 +156,10 @@ class ChainCollection():
   def size(self):
     return len(self.chains)
 
+  def __bool__(self):
+    return self.size() >= 1
+  __nonzero__ = __bool__
+  
 # An abstract simplicial complex is a collection of simplices closed under the subset operation.
 class ASC:
   # simplices is a set
@@ -252,7 +256,8 @@ class ASC:
     if store_matrix:
       if n_row >= 0 and n_col >= 0:
         self.boundary_matrix[k] = z2array_zeros((n_row + 1, n_col + 1))
-        # Boundary matrix of 0-simplices should be all zeros.
+        # The boundary matrix of 0-simplices contains a redundant zero row for sake of computational,
+        #  well-defined behavior (the row of ones corresponding to the zero vector in the image is omitted).
         if k > 0:
           self.boundary_matrix[k][ones_r, ones_c] = 1
       if verbose:
@@ -270,6 +275,11 @@ class ASC:
   # we can obtain the kernel of the boundary map (nullspace of the boundary matrix)
   # using the boundary matrix, which is stored as a member variable of this object.
   def extract_kernel_cycles(self, k, verbose=False):
+    if k > self.highest_dimension() + 1:
+      if verbose:
+        print("{}")
+        print("Rank of kernel: 0")
+      return ChainCollection()
     null_basis = z2_null_basis(self.boundary_matrix[k])
     all_cycles = ChainCollection()
     if verbose:
@@ -296,6 +306,11 @@ class ASC:
   # we can obtain the image of the boundary map using the boundary matrix,
   # which is stored as a member variable of this object.
   def extract_boundary_image(self, k, verbose=False):
+    if k > self.highest_dimension():
+      if verbose:
+        print("{}")
+        print("Rank of image space: 0")
+      return ChainCollection()
     image_basis = z2_image_basis(self.boundary_matrix[k])
     all_boundaries = ChainCollection()
     if verbose:
@@ -315,7 +330,7 @@ class ASC:
         all_boundaries.add(new_boundary)
     if verbose:
       print(cc)
-      print("Rank of image: ", z2rank(image_basis, nullspace=False))
+      print("Rank of image space: ", z2rank(image_basis, nullspace=False))
     return all_boundaries
 
   # After self.compute_boundary(...) has been called for dimensions k and k+1,
@@ -395,12 +410,19 @@ class ASC:
 # Memory usage: O((k+1) * |P|^(k+1))
 def vietoris_rips(points, k, max_diam):
   new_asc = ASC()
+  distance_cache = {}
   for d in range(k+1):  # for each dimension from 0 to k
     for subset in combinations(points, d+1):
       # diameter is the max distance between all pairs of points
       diameter = 0.0
       for pair in combinations(subset, 2):
-        diameter = max(diameter, pair[0].distance_to(pair[1]))
+        # ensure that pair[0] <= pair[1]
+        if pair[0] > pair[1]:
+            pair = (pair[1], pair[0])
+        # update the cache if distance for this pair hasn't yet been computed
+        if pair not in distance_cache:
+          distance_cache[pair] = pair[0].distance_to(pair[1])
+        diameter = max(diameter, distance_cache[pair])
         if diameter > max_diam:
           break
       if diameter > max_diam:

@@ -1,6 +1,7 @@
 ## LeDuc, Pereira, Zhang
 # This is a first hack at working with the project data using the KL divergence to measure the distance
 # between two probability distributions of the depth of minimum sound speed.
+
 import numpy as np
 import pandas as pd
 import pylab as pl # This gets used a lot I promise
@@ -9,10 +10,10 @@ from metrics import ks_test
 from random import sample, seed
 from scipy.interpolate import interp1d
 from statfuncs import ecdf
+<<<<<<< HEAD
 print('AAAAAAAAAA')
 # import sys
 # sys.setrecursionlimit(1000)
-
 # Global constants (bad)
 # TODO: move these into a config file?
 USE_RANDOM_SAMPLING = True  # Read a random sample of points from the input data
