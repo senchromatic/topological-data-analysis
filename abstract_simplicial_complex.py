@@ -195,7 +195,7 @@ class ASC:
   
   # String representation of simplices sorted by (non-decreasing) dimension
   def __str__(self, sep="\n\n"):
-    return '{' + sep.join(['; '.join(map(str, sorted(self.k_simplices(k)))) for k in self.all_dimensions()]) + '}'
+    return '{' + sep.join([';\n'.join(map(str, sorted(self.k_simplices(k)))) for k in self.all_dimensions()]) + '}'
   
   # Check closure by taking all subsets.
   def is_valid(self):
