@@ -35,7 +35,7 @@ class Filtration:
         return '{' + ',\n'.join([str(i) + ': ' + str(p) for i,p in enumerate(self.ordered_points)]) + '}'
     
     # Prints the point labels, distance matrix, and ASC sequence in this filtration
-    def print_filtration(self):
+    def print_filtration(self, verbosity=0):
         print("Ordered points: ")
         print(self.stringify_ordered_points())
         print()
@@ -46,7 +46,7 @@ class Filtration:
         print("{" + ";\n".join([str(dp) for dp in self.distance_ordered_pairs]) + "}")
         print("\n")
         
-        self.generate_filtration(verbose=False)
+        self.generate_filtration(verbosity)
         for diameter,asc in zip([0] + self.selected_diameters, self.asc_sequence):
             print("Diameter = " + str(diameter))
             print("ASC: ")
@@ -81,7 +81,7 @@ class Filtration:
     # Every ASC will be stored in this object (self.asc_sequence)
     # TODO(sampling): add other threshold sampling methods, if we don't want to include all distances as thresholds
     # TODO(optimization): instead of storing the original ASC, store an ASC of the Point indices (without copying names, coordinates)
-    def generate_filtration(self, verbose=False):
+    def generate_filtration(self, verbosity=0):
         # Special case: Start with all points in zeroth ASC
         self.asc_sequence = [self.create_zeroth_asc()]
         self.selected_diameter_indices = range(len(self.distance_ordered_pairs))  # TODO(sampling)
@@ -92,11 +92,14 @@ class Filtration:
             # Get the diameter and set of 1-simplices
             # TODO: make use of diameter?
             diameter, edge_indices = self.distance_ordered_pairs[i]
-            if verbose:
-                print("\nprevious asc: ")
-                print(new_asc)
+            if verbosity >= 1:
+                print()
                 print("diam = " + str(diameter))
-                print("edge indices = " + str(edge_indices))
+                if verbosity >= 2:
+                    print("edge indices = " + str(edge_indices))
+                if verbosity >= 3:
+                    print("previous asc: ")
+                    print(new_asc)
             # Initialize queue of simplices
             new_simplices_queue = []
             for i,j in edge_indices:
@@ -108,16 +111,19 @@ class Filtration:
                 for new_face in new_simplices_queue:
                     # Birth: dimension = k
                     new_asc.add_simplex(new_face.copy())
-                    if verbose:
+                    if verbosity >= 2:
                         print("add " + str(new_face))
-                    # Check if this simplex is a face for any simplex of dimension k+1
+                    # Stop expanding further if we've reached the maximum dimension
+                    if new_face.dimension == self.max_dimension:
+                        continue
+                    # Otherwise, check if this simplex is a face for any simplex of dimension k+1
                     for p in self.ordered_points:
                         if p in new_face.points:
                             continue
                         # Create the k+1 simplex
                         new_sim = new_face.copy()
                         new_sim.add_point(p)
-                        if verbose:
+                        if verbosity >= 3:
                             print("new sim: " + str(new_sim))
                         # TODO: modularize this into a function
                         # Delete each other point and check whether the other faces are in the ASC
