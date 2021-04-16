@@ -32,7 +32,7 @@ class Filtration:
     
     # Convert the list of ordered points into a human-readable format, for debugging
     def stringify_ordered_points(self):
-        return '{' + ', '.join([str(i) + ': ' + str(p) for i,p in enumerate(self.ordered_points)]) + '}'
+        return '{' + ',\n'.join([str(i) + ': ' + str(p) for i,p in enumerate(self.ordered_points)]) + '}'
     
     # Prints the point labels, distance matrix, and ASC sequence in this filtration
     def print_filtration(self):
@@ -43,8 +43,8 @@ class Filtration:
         print(self.distance_matrix)
         print()
         print("Pairs of indices by ordered distance: ")
-        print(self.distance_ordered_pairs)
-        print()
+        print("{" + ";\n".join([str(dp) for dp in self.distance_ordered_pairs]) + "}")
+        print("\n")
         
         self.generate_filtration(verbose=False)
         for diameter,asc in zip([0] + self.selected_diameters, self.asc_sequence):
