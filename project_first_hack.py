@@ -5,7 +5,9 @@
 import numpy as np
 import pandas as pd
 import pylab as pl # This gets used a lot I promise
+
 from abstract_simplicial_complex import Point, Simplex, vietoris_rips
+from filtration import Filtration
 from metrics import ks_test
 from random import sample, seed
 from scipy.interpolate import interp1d
@@ -182,9 +184,5 @@ if __name__ == '__main__':
     geographic_names = generate_geographic_names(masked_latitudes, masked_longitudes)
     point_cloud = create_point_cloud(geographic_names, masked_cdfs, ks_test)
     
-    for rr in np.arange(0.1, 1, 0.1):
-        rips_asc = vietoris_rips(point_cloud, MAX_ASC_DIMENSION, rr)
-        print("Radius = "+str(rr))
-        # Print simplices
-        for k in range(1,MAX_ASC_DIMENSION+1):
-            rips_asc.compute_boundary(k)
+    f = Filtration(point_cloud, len(point_cloud) - 1)
+    f.print_filtration()

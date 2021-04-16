@@ -71,6 +71,10 @@ class Point:
 class Simplex:
   def __init__(self, points=None):
     self.points = points if points else set()
+  
+  # Copy the set of points
+  def copy(self):
+    return Simplex(points={p for p in self.points})
 
   def dimension(self):
     return len(self.points) - 1
@@ -173,6 +177,10 @@ class ASC:
     self.boundary_matrix = dict()
     self.column_simplices = dict()
     self.row_simplices = dict()
+  
+  # Create a copy of this ASC with the same collection of simplices (discarding other data)
+  def deepcopy(self):
+    return ASC(simplices={sim.copy() for sim in self.simplices})
   
   # We define the dimension of an ASC as the maximum dimension among its simplices, if -1 if it's empty.
   def highest_dimension(self):
