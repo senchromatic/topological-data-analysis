@@ -24,6 +24,8 @@ import numpy as np
 
 def display_filtration(points):
     f = Filtration(points, len(points) - 1)
+    f.print_metadata()
+    f.generate_filtration()
     f.print_filtration()
 
 def test_1():

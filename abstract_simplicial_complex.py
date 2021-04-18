@@ -75,7 +75,7 @@ class Simplex:
   # Copy the set of points
   def copy(self):
     return Simplex(points={p for p in self.points})
-
+  
   def dimension(self):
     return len(self.points) - 1
   
@@ -207,7 +207,7 @@ class ASC:
   
   def add_simplex(self, sim):
     self.simplices.add(sim)
-
+  
   # Computes the boundary for all simplices of dimension at most k.
   # If k is unspecified, the ASC's dimension will be used by default.
   # If store_matrix option is True, a z2array is stored as self.boundary_matrix;
@@ -340,7 +340,7 @@ class ASC:
       print(cc)
       print("Rank of image space: ", z2rank(image_basis, nullspace=False))
     return all_boundaries
-
+  
   # After self.compute_boundary(...) has been called for dimensions k and k+1,
   # we can obtain the kernel (k) and image (k+1) of the corresponding boundary maps,
   # and use them to find a basis isomorphic to that of the quotient space.
