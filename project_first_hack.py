@@ -189,6 +189,9 @@ if __name__ == '__main__':
     f.print_metadata()
     f.generate_filtration(verbosity=1)
     # f.print_filtration()
+    # for asc in f.asc_sequence:
+    #     for k in range(1, MAX_ASC_DIMENSION+1):
+    #         asc.compute_boundary(k)
     
     # for rr in np.arange(0.1, 1, 0.1):
     #     rips_asc = vietoris_rips(point_cloud, MAX_ASC_DIMENSION, rr)
