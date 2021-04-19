@@ -71,6 +71,10 @@ class Point:
 class Simplex:
   def __init__(self, points=None):
     self.points = points if points else set()
+  
+  # Copy the set of points
+  def copy(self):
+    return Simplex(points={p for p in self.points})
 
   def dimension(self):
     return len(self.points) - 1
@@ -174,6 +178,10 @@ class ASC:
     self.column_simplices = dict()
     self.row_simplices = dict()
   
+  # Create a copy of this ASC with the same collection of simplices (discarding other data)
+  def deepcopy(self):
+    return ASC(simplices={sim.copy() for sim in self.simplices})
+  
   # We define the dimension of an ASC as the maximum dimension among its simplices, if -1 if it's empty.
   def highest_dimension(self):
     return max([sim.dimension() for sim in self.simplices]) if self.simplices else -1
@@ -187,7 +195,7 @@ class ASC:
   
   # String representation of simplices sorted by (non-decreasing) dimension
   def __str__(self, sep="\n\n"):
-    return '{' + sep.join(['; '.join(map(str, sorted(self.k_simplices(k)))) for k in self.all_dimensions()]) + '}'
+    return '{' + sep.join([';\n'.join(map(str, sorted(self.k_simplices(k)))) for k in self.all_dimensions()]) + '}'
   
   # Check closure by taking all subsets.
   def is_valid(self):
