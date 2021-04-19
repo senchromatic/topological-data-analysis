@@ -17,8 +17,8 @@ from statfuncs import ecdf
 # Global constants (bad)
 # TODO: move these into a config file?
 USE_RANDOM_SAMPLING = True  # Read a random sample of points from the input data
-MIN_POINTS_FOR_KL_DIVERGENCE = 4 # Minimum number of points needed to compute KL divergence
-TEST_SAMPLE_SIZE = 1400  # Number of points to extract from dataset (non-random sampling)
+MIN_POINTS_FOR_KL_DIVERGENCE = 4  # Minimum number of points needed to compute KL divergence
+TEST_SAMPLE_SIZE = 2000  # Number of points to extract from dataset (non-random sampling)
 MIN_SIGNIFICANCE_LEVEL = 0.05  # Used in Kolmogorov-Smirnov test
 MAX_ASC_DIMENSION = 2 # Maximum dimension of the simplices considered in the output ASC
 
@@ -195,7 +195,20 @@ if __name__ == '__main__':
     geographic_names = generate_geographic_names(masked_latitudes, masked_longitudes)
     point_cloud = create_point_cloud(geographic_names, masked_cdfs, ks_test)
 
-    
-    f = Filtration(point_cloud, 2)
+    # f = Filtration(point_cloud, len(point_cloud) - 1)
+    f = Filtration(point_cloud, max_dimension=MAX_ASC_DIMENSION)
+    f.print_metadata()
+    f.generate_filtration(verbosity=1)
     # f.print_filtration()
+    # for asc in f.asc_sequence:
+    #     for k in range(1, MAX_ASC_DIMENSION+1):
+    #         asc.compute_boundary(k)
+    
+    # for rr in np.arange(0.1, 1, 0.1):
+    #     rips_asc = vietoris_rips(point_cloud, MAX_ASC_DIMENSION, rr)
+    #     print("Radius = "+str(rr))
+    #     print(rips_asc)
+    #     # Print simplices
+    #     for k in range(1,MAX_ASC_DIMENSION+1):
+    #         rips_asc.compute_boundary(k)
 
