@@ -5,6 +5,10 @@ from itertools import combinations
 import numpy as np
 
 
+# Number of cutoffs at which diameter thresholds are chosen (ignored if custom list is specified for generate_filtration)
+DEFAULT_NUM_SAMPLE_DIAMETERS = 20
+
+
 # Member variables:
 #  N: number of points
 #  max_dimension: upper bound on dimension of the ASCs to be computed
@@ -132,26 +136,47 @@ class Filtration:
         dimension_indices[0] = [i for i in range(len(self.ordered_points))]
         return dimension_indices
     
+    # Chooses up to num_diameters from distance_ordered_pairs at a roughly uniform number of edges per cutoff threshold.
+    def uniformly_sample_diameters(self, num_diameters, minimum_diameter=0):
+        # Estimate the number of edges per cutoff.
+        assert(num_diameters >= 1)
+        total_num_edges = sum([len(edges) for diameter, edges in self.distance_ordered_pairs])
+        approx_edges_per_interval = total_num_edges / (num_diameters - 1)
+        # Select diameters from a sorted list at uniform gaps.
+        selected_diameters = [minimum_diameter]
+        edge_count = 0
+        for diameter, edges in self.distance_ordered_pairs:
+            edge_count += len(edges)
+            if edge_count >= approx_edges_per_interval:
+                edge_count = 0
+                selected_diameters.append(diameter)
+        return selected_diameters
+    
     # Every ASC with simplices up to the max_diameter will be stored in this object (self.asc_sequence)
-    # TODO(sampling): add other threshold sampling methods, if we don't want to include all distances as thresholds
+    # Either a fixed number of diameters can be selected using the uniformly_sample_diameters method, or a custom list can be passed in
     # TODO(optimization): instead of storing the original ASC, store an ASC of the Point indices (without copying names, coordinates)
-    def generate_filtration(self, max_diameter=1, verbosity=0):
+    def generate_filtration(self, selected_diameters=None, verbosity=0):
+        # By default, pick 10 diameters to uniformly partition the sorted list of edges.
+        if selected_diameters is None:
+            selected_diameters = self.uniformly_sample_diameters(DEFAULT_NUM_SAMPLE_DIAMETERS)
+        self.selected_diameters = selected_diameters  # Store this value as needed for print_filtration
         # Special case: Start with all points in zeroth ASC
         self.asc_sequence = [self.create_zeroth_asc()]
         self.index_sequence = [self.create_zeroth_indices()]
-        self.selected_diameter_indices = range(len(self.distance_ordered_pairs))  # TODO(sampling)
-        self.selected_diameters = [self.distance_ordered_pairs[i][0] for i in self.selected_diameter_indices]
-        assert(self.selected_diameters == sorted(self.selected_diameters))
-        # For each selected diameter index
-        for i in self.selected_diameter_indices:
+        ## self.selected_diameter_indices = range(len(self.distance_ordered_pairs))  # TODO(sampling)
+        ## self.selected_diameters = [self.distance_ordered_pairs[i][0] for i in self.selected_diameter_indices]
+        i = 0  # list index in distance_ordered_pairs
+        # For each selected diameter
+        for diameter in selected_diameters:
             new_asc = self.asc_sequence[-1].deepcopy()
-            # Get the diameter and set of 1-simplices
-            diameter, edge_indices = self.distance_ordered_pairs[i]
-            if diameter > max_diameter:
-                break
+            # Gather a set of 1-simplices with distance no greater than current cutoff
+            edge_indices = []
+            while i < len(self.distance_ordered_pairs) and self.distance_ordered_pairs[i][0] <= diameter:
+                edge_indices.extend(self.distance_ordered_pairs[i][1])
+                i += 1
             if verbosity >= 1:
                 print()
-                print("diam = " + str(diameter))
+                print("diameter cutoff threshold = " + str(diameter))
                 if verbosity >= 2:
                     print("edge indices = " + str(edge_indices))
                 if verbosity >= 3:
