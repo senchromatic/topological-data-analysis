@@ -191,6 +191,10 @@ def z2row_echelon(z2mat, copy_mat=True):
     return A
 
 
+def z2column_echelon(z2mat, copy_mat=True):
+    return z2row_echelon(z2mat.T, copy_mat=copy_mat).T
+
+
 def z2rank(z2mat, nullspace=True):
     """
     Count number of nonzero rows in the row echelon
@@ -503,8 +507,15 @@ if __name__ == "__main__":
     print(M5 @ null_basisM5)
 
     # Takes a while to run because the matrix is big, but passes.
-    print("\n\nRecursion test")
-    big_matrix = Z2array(np.abs(np.random.rand(5000, 2000)).round().astype(np.int))
-    z2row_echelon(big_matrix)
+    #print("\n\nRecursion test")
+    #big_matrix = Z2array(np.abs(np.random.rand(5000, 2000)).round().astype(np.int))
+    #z2row_echelon(big_matrix)
     # If we don't get a recursion error, we pass.
-    print("Passed. (No recursion limit error).")
+    #print("Passed. (No recursion limit error).")
+
+    print("\n\n@@@@@@@@@@@@@@@@@@@@@@@@@@")
+    print("Visual check for column echelon form:")
+    print("@@@@@@@@@@@@@@@@@@@@@@@@@@")
+    print(f"\nTesting bases with Array 5:\n{M5}")
+    crM5 = z2column_echelon(M5)
+    print(f"\nColumn echelon form:\n{crM5}")
