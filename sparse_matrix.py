@@ -1,6 +1,8 @@
 # This module has two classes.
 # Each Z2SparseSquareMatrix is a collection of Z2SparseColumns.
 
+from collections import defaultdict
+
 # Constant for undefined lowest positive entry number
 UNDEFINED_LOW_FOR_EMPTY_COLUMN = -1
 
@@ -52,6 +54,7 @@ class Z2SparseSquareMatrix:
     
     # See pseudocode described in page 182 of Edelsbrunner, Harer - "Computational Topology"
     def column_reduction(self, verbose=False):
+        pivot_cache = defaultdict(list)  # Dictionary from get_low to matching columns with index < cj
         for cj in range(self.M):
             if verbose:
                 print("Reducing column", cj, "of", self.M)
@@ -63,12 +66,14 @@ class Z2SparseSquareMatrix:
             while first_search or added_columns:
                 first_search = False
                 added_columns = False
-                for ci in range(cj):
-                    if self.columns[ci].get_low() == UNDEFINED_LOW_FOR_EMPTY_COLUMN:
+                cj_low = self.columns[cj].get_low()  # Store the get_low value for column cj for reuse
+                for ci in pivot_cache[cj_low]:
+                    if cj_low == UNDEFINED_LOW_FOR_EMPTY_COLUMN:
                         continue
-                    if self.columns[ci].get_low() == self.columns[cj].get_low():
-                        self.columns[cj].add(self.columns[ci])
-                        added_columns = True
+                    self.columns[cj].add(self.columns[ci])
+                    added_columns = True
+                    cj_low = self.columns[cj].get_low()
+            pivot_cache[self.columns[cj].get_low()].append(cj)
         self.is_reduced = True
     
     # Returns an ordered list of (column, row) indices for pivots positions
