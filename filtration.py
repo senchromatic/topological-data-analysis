@@ -1,13 +1,16 @@
 from abstract_simplicial_complex import Point, Simplex, ASC
 from copy import deepcopy
 from itertools import combinations
+from math import pow
 from sparse_matrix import Z2SparseSquareMatrix
 
 import numpy as np
 
 
 # Number of cutoffs at which diameter thresholds are chosen (ignored if custom list is specified for generate_filtration)
-DEFAULT_NUM_SAMPLE_DIAMETERS = 20
+DEFAULT_ARITHMETIC_SAMPLE_DIAMETERS = 20
+DEFAULT_GEOMETRIC_SAMPLE_DIAMETERS = 100
+USE_GEOMETRIC_SAMPLING = True  # False: approximately equal number of edges per diameter, True: diameters form a roughly geometric sequence
 
 
 # Member variables:
@@ -157,15 +160,39 @@ class Filtration:
                 selected_diameters.append(diameter)
         return selected_diameters
     
+    # Choose up to num_diameters from epsilon_diameter to maximum_diameter in (approximate) geometric sequence.
+    def geometric_sequence_diameters(self, num_diameters, minimum_diameter=0, epsilon_diameter=0.01, maximum_diameter=0.99):
+        assert(num_diameters >= 1)
+        # 0 <= min < epsilon < max
+        assert(0 <= minimum_diameter)
+        assert(minimum_diameter < epsilon_diameter)
+        assert(epsilon_diameter < maximum_diameter)
+        # Prepare geometric sequence
+        selected_diameters = [minimum_diameter]
+        range_ratio = maximum_diameter / epsilon_diameter
+        step_ratio = pow(range_ratio, 1.0 / num_diameters)
+        cutoff_threshold = epsilon_diameter
+        # Selected diameters at roughly geometric gaps
+        for diameter, _ in self.distance_ordered_pairs:
+            if diameter > maximum_diameter:
+                break
+            if diameter > cutoff_threshold:
+                selected_diameters.append(diameter)
+                cutoff_threshold *= step_ratio
+        return selected_diameters
+    
     # Every subcomplex (ASC) with simplices up to the max_diameter will be stored in this object (self.asc_sequence),
     # and a sparse boundary matrix (with all simplices in the filtered ASC) will be generated
     # Either a fixed number of diameters can be selected using the uniformly_sample_diameters method, or a custom list can be passed in
     # If maximum_diameter is specified, the filtration will not consider diameters greater than the argument value
     # TODO(optimization): instead of storing the original ASC, store an ASC of the Point indices (without copying names, coordinates)
-    def generate_filtration(self, selected_diameters=None, maximum_diameter=None, verbosity=0):
+    def generate_filtration(self, selected_diameters=None, epsilon_diameter=0.01, maximum_diameter=0.99, verbosity=0):
         # By default, pick 10 diameters to uniformly partition the sorted list of edges.
         if selected_diameters is None:
-            selected_diameters = self.uniformly_sample_diameters(DEFAULT_NUM_SAMPLE_DIAMETERS, maximum_diameter=maximum_diameter)
+            if USE_GEOMETRIC_SAMPLING:
+                selected_diameters = self.geometric_sequence_diameters(DEFAULT_GEOMETRIC_SAMPLE_DIAMETERS, epsilon_diameter=epsilon_diameter, maximum_diameter=maximum_diameter)
+            else:
+                selected_diameters = self.uniformly_sample_diameters(DEFAULT_ARITHMETIC_SAMPLE_DIAMETERS, maximum_diameter=maximum_diameter)
         self.selected_diameters = selected_diameters  # Store this value as needed for print_filtration
         # Special case: Start with all points in zeroth ASC
         self.asc_sequence = [self.create_zeroth_asc()]
