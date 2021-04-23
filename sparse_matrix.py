@@ -27,6 +27,8 @@ class Z2SparseColumn:
         return max(self.entries) if self.entries else UNDEFINED_LOW_FOR_EMPTY_COLUMN
     
     def add(self, other_column):
+        # Equivalent to xor (set_difference is equally efficient)
+        # self.entries = self.entries ^ other_column.entries
         for r in other_column.entries:
             self.flip_bit(r)
 
@@ -67,6 +69,7 @@ class Z2SparseSquareMatrix:
                 first_search = False
                 added_columns = False
                 cj_low = self.columns[cj].get_low()  # Store the get_low value for column cj for reuse
+                # This loop will execute at most once, since pivots clear out the entire row to the left
                 for ci in pivot_cache[cj_low]:
                     if cj_low == UNDEFINED_LOW_FOR_EMPTY_COLUMN:
                         continue
