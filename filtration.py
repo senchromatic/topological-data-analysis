@@ -139,7 +139,8 @@ class Filtration:
         return dimension_indices
     
     # Chooses up to num_diameters from distance_ordered_pairs at a roughly uniform number of edges per cutoff threshold.
-    def uniformly_sample_diameters(self, num_diameters, minimum_diameter=0):
+    # Diameters above the maximum are excluded.
+    def uniformly_sample_diameters(self, num_diameters, minimum_diameter=0, maximum_diameter=None):
         # Estimate the number of edges per cutoff.
         assert(num_diameters >= 1)
         total_num_edges = sum([len(edges) for diameter, edges in self.distance_ordered_pairs])
@@ -148,6 +149,8 @@ class Filtration:
         selected_diameters = [minimum_diameter]
         edge_count = 0
         for diameter, edges in self.distance_ordered_pairs:
+            if diameter > maximum_diameter:
+                break
             edge_count += len(edges)
             if edge_count >= approx_edges_per_interval:
                 edge_count = 0
@@ -157,11 +160,12 @@ class Filtration:
     # Every subcomplex (ASC) with simplices up to the max_diameter will be stored in this object (self.asc_sequence),
     # and a sparse boundary matrix (with all simplices in the filtered ASC) will be generated
     # Either a fixed number of diameters can be selected using the uniformly_sample_diameters method, or a custom list can be passed in
+    # If maximum_diameter is specified, the filtration will not consider diameters greater than the argument value
     # TODO(optimization): instead of storing the original ASC, store an ASC of the Point indices (without copying names, coordinates)
-    def generate_filtration(self, selected_diameters=None, verbosity=0):
+    def generate_filtration(self, selected_diameters=None, maximum_diameter=None, verbosity=0):
         # By default, pick 10 diameters to uniformly partition the sorted list of edges.
         if selected_diameters is None:
-            selected_diameters = self.uniformly_sample_diameters(DEFAULT_NUM_SAMPLE_DIAMETERS)
+            selected_diameters = self.uniformly_sample_diameters(DEFAULT_NUM_SAMPLE_DIAMETERS, maximum_diameter=maximum_diameter)
         self.selected_diameters = selected_diameters  # Store this value as needed for print_filtration
         # Special case: Start with all points in zeroth ASC
         self.asc_sequence = [self.create_zeroth_asc()]
@@ -228,6 +232,10 @@ class Filtration:
             # Add an entry for each coface of this face
             for sim_index in self.coface_adjlist[k][face_index]:
                 coface = self.all_simplices[k+1][sim_index]
+                # Coface may not be included if it's beyond the max diameter
+                # TODO: Find a way of excluding large cofaces upfront, rather than using simplex_ordering
+                if coface not in simplex_ordering:
+                    continue
                 c = simplex_ordering[coface]  # c : column number in the boundary matrix
                 self.boundary_matrix.flip_entry(c, r)
         if verbosity >= 1:
@@ -235,4 +243,4 @@ class Filtration:
         if verbosity >= 2:
             print("Non-reduced (sparse) boundary matrix")
             print(self.boundary_matrix)
-        self.boundary_matrix.column_reduction()
+        self.boundary_matrix.column_reduction(verbose=(verbosity >= 2))

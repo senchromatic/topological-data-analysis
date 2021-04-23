@@ -51,8 +51,10 @@ class Z2SparseSquareMatrix:
         self.columns[c].flip_bit(r)
     
     # See pseudocode described in page 182 of Edelsbrunner, Harer - "Computational Topology"
-    def column_reduction(self):
+    def column_reduction(self, verbose=False):
         for cj in range(self.M):
+            if verbose:
+                print("Reducing column", cj, "of", self.M)
             # Skip empty column
             if self.columns[cj].get_low() == UNDEFINED_LOW_FOR_EMPTY_COLUMN:
                 continue
