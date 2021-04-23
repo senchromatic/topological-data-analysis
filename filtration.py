@@ -1,6 +1,7 @@
 from abstract_simplicial_complex import Point, Simplex, ASC
 from copy import deepcopy
 from itertools import combinations
+from sparse_matrix import Z2SparseSquareMatrix
 
 import numpy as np
 
@@ -22,6 +23,7 @@ DEFAULT_NUM_SAMPLE_DIAMETERS = 20
 #  simplex_indices: list of (map from simplex to ordered index) for each dimension
 #  coface_adjlist: list of (list of (list of simplices for which this simplex is a face) for each simplex) for each dimension
 #  num_faces_remaining: list of (list of integers representing the number of faces not yet filled in for each simplex) for each dimension
+#  boundary_matrix: boundary (sparse square Z_2) matrix of the filtered ASC, constructed and reduced in generate_filtration
 class Filtration:
     # Parameters
     #  points: set of Point
@@ -152,7 +154,8 @@ class Filtration:
                 selected_diameters.append(diameter)
         return selected_diameters
     
-    # Every subcomplex (ASC) with simplices up to the max_diameter will be stored in this object (self.asc_sequence)
+    # Every subcomplex (ASC) with simplices up to the max_diameter will be stored in this object (self.asc_sequence),
+    # and a sparse boundary matrix (with all simplices in the filtered ASC) will be generated
     # Either a fixed number of diameters can be selected using the uniformly_sample_diameters method, or a custom list can be passed in
     # TODO(optimization): instead of storing the original ASC, store an ASC of the Point indices (without copying names, coordinates)
     def generate_filtration(self, selected_diameters=None, verbosity=0):
@@ -165,6 +168,9 @@ class Filtration:
         self.index_sequence = [self.create_zeroth_indices()]
         ## self.selected_diameter_indices = range(len(self.distance_ordered_pairs))  # TODO(sampling)
         ## self.selected_diameters = [self.distance_ordered_pairs[i][0] for i in self.selected_diameter_indices]
+        # Initialize a 1-dimensional dictionary from simplex to order in which it was added
+        # (note that unlike simplex_indices, this is a flat list for all simplices, as necessary for the boundary matrix)
+        simplex_ordering = {}
         i = 0  # list index in distance_ordered_pairs
         # For each selected diameter
         for diameter in selected_diameters:
@@ -184,18 +190,19 @@ class Filtration:
                     print(new_asc)
             # Initialize queue of simplices
             new_simplices_queue = []
-            for i,j in edge_indices:
-                new_simplices_queue.append(Simplex(points={self.ordered_points[i], self.ordered_points[j]}))
+            for ei,ej in edge_indices:
+                new_simplices_queue.append(Simplex(points={self.ordered_points[ei], self.ordered_points[ej]}))
             # Add simplices in order of dimension, k (breadth-first search expansion)
             while new_simplices_queue:
                 # Initialize the list of simplices of higher dimension, k+1
                 next_simplices_queue = []
                 for new_face in new_simplices_queue:
+                    simplex_ordering[new_face] = len(simplex_ordering)
                     k = new_face.dimension()
                     # Birth: dimension = k
                     new_asc.add_simplex(new_face.copy())
                     if verbosity >= 2:
-                        print("add " + str(new_face))
+                        print("add " + str(new_face) + " with index " + str(simplex_ordering[new_face]))
                     # Stop expanding further if we've reached the maximum dimension
                     if k == self.max_dimension:
                         continue
@@ -209,5 +216,23 @@ class Filtration:
                             next_simplices_queue.append(self.all_simplices[k+1][sim_index])
                 new_simplices_queue = next_simplices_queue
             self.asc_sequence.append(new_asc)
+        # Create the boundary matrix for the filtered ASC
+        M = len(simplex_ordering)
+        self.boundary_matrix = Z2SparseSquareMatrix(M)
+        for face, r in simplex_ordering.items():  # r: row number in the boundary matrix
+            k = face.dimension()
+            face_index = self.simplex_indices[k][face]
+            # No cofaces for simplices of the maximum dimension
+            if k == self.max_dimension:
+                continue
+            # Add an entry for each coface of this face
+            for sim_index in self.coface_adjlist[k][face_index]:
+                coface = self.all_simplices[k+1][sim_index]
+                c = simplex_ordering[coface]  # c : column number in the boundary matrix
+                self.boundary_matrix.flip_entry(c, r)
         if verbosity >= 1:
             print("\n")
+        if verbosity >= 2:
+            print("Non-reduced (sparse) boundary matrix")
+            print(self.boundary_matrix)
+        self.boundary_matrix.column_reduction()

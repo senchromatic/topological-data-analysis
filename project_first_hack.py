@@ -193,6 +193,9 @@ if __name__ == '__main__':
     #     for k in range(1, MAX_ASC_DIMENSION+1):
     #         asc.compute_boundary(k)
     
+    print("(Birth, death) points: ")
+    print(f.boundary_matrix.find_pivots_rc())
+    
     # for rr in np.arange(0.1, 1, 0.1):
     #     rips_asc = vietoris_rips(point_cloud, MAX_ASC_DIMENSION, rr)
     #     print("Radius = "+str(rr))
