@@ -21,6 +21,7 @@ MIN_POINTS_FOR_KL_DIVERGENCE = 4  # Minimum number of points needed to compute K
 TEST_SAMPLE_SIZE = 2000  # Number of points to extract from dataset (non-random sampling)
 MIN_SIGNIFICANCE_LEVEL = 0.05  # Used in Kolmogorov-Smirnov test
 MAX_ASC_DIMENSION = 2  # Maximum dimension of the simplices considered in the output ASC
+MAX_FILTRATION_DIAMETER = 0.99  # Diameters beyond this value will be excluded from the filtration
 
 # Read a subset of data from multiple years (currently, 2 years -- hardcoded)
 def read_raw_data(sample_size=None, sample_randomly=True, random_seed=0):
@@ -187,11 +188,14 @@ if __name__ == '__main__':
     # f = Filtration(point_cloud, len(point_cloud) - 1)
     f = Filtration(point_cloud, max_dimension=MAX_ASC_DIMENSION)
     f.print_metadata()
-    f.generate_filtration(verbosity=1)
+    f.generate_filtration(verbosity=1, maximum_diameter=MAX_FILTRATION_DIAMETER)
     # f.print_filtration()
     # for asc in f.asc_sequence:
     #     for k in range(1, MAX_ASC_DIMENSION+1):
     #         asc.compute_boundary(k)
+    
+    print("(Birth, death) points: ")
+    print(f.boundary_matrix.find_pivots_rc())
     
     # for rr in np.arange(0.1, 1, 0.1):
     #     rips_asc = vietoris_rips(point_cloud, MAX_ASC_DIMENSION, rr)
