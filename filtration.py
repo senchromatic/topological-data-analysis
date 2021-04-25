@@ -27,6 +27,7 @@ USE_GEOMETRIC_SAMPLING = True  # False: approximately equal number of edges per 
 #  coface_adjlist: list of (list of (list of simplices for which this simplex is a face) for each simplex) for each dimension
 #  num_faces_remaining: list of (list of integers representing the number of faces not yet filled in for each simplex) for each dimension
 #  boundary_matrix: boundary (sparse square Z_2) matrix of the filtered ASC, constructed and reduced in generate_filtration
+#  ordered_diameters: list of diameters for each simplex added, used for plotting persistence diagrams
 class Filtration:
     # Parameters
     #  points: set of Point
@@ -202,6 +203,8 @@ class Filtration:
         # Initialize a 1-dimensional dictionary from simplex to order in which it was added
         # (note that unlike simplex_indices, this is a flat list for all simplices, as necessary for the boundary matrix)
         simplex_ordering = {}
+        # List of ordering to diameters, in general containing duplicates; the values of simplex_ordering are the indices of all_diameters
+        self.ordered_diameters = []
         i = 0  # list index in distance_ordered_pairs
         # For each selected diameter
         for diameter in selected_diameters:
@@ -229,6 +232,7 @@ class Filtration:
                 next_simplices_queue = []
                 for new_face in new_simplices_queue:
                     simplex_ordering[new_face] = len(simplex_ordering)
+                    self.ordered_diameters.append(diameter)
                     k = new_face.dimension()
                     # Birth: dimension = k
                     new_asc.add_simplex(new_face.copy())
