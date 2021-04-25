@@ -18,6 +18,7 @@ def plot_birth_death(pivots_rc, diameters, dimensions, xy_fmt="k--", output_file
     # Prepare plotting
     figure, axes = pyplot.subplots()
     axes.set(xlabel="Birth (diameter)", ylabel="Death (diameter)", title="Birth-Death Plot")
+    axes.plot([0, 1], xy_fmt, alpha=DEFAULT_OPACITY)  # y = x
     # For each dimension
     for k in range(min(dimensions), max(dimensions)):
         x = []  # r: row (birth)
@@ -34,7 +35,6 @@ def plot_birth_death(pivots_rc, diameters, dimensions, xy_fmt="k--", output_file
         if verbose:
             print("(Birth diameter, death diameter) for " + str(k) + "-homologies, ordered by increasing birth: ")
             print(list(zip(x,y)))
-    axes.plot([0, 1], xy_fmt)  # y = x
     axes.legend()
     figure.savefig(output_filename)
 
@@ -46,6 +46,7 @@ def plot_birth_death(pivots_rc, diameters, dimensions, xy_fmt="k--", output_file
 def plot_birth_persistence(pivots_rc, diameters, dimensions, y0_fmt="k--", output_filename="birth_persistence.png", verbose=True):
     figure, axes = pyplot.subplots()
     axes.set(xlabel="Birth (diameter)", ylabel="Persistence (diameter)", title="Birth-Persistence Plot")
+    axes.plot([0, 1], [0, 0], y0_fmt, alpha=DEFAULT_OPACITY)  # y = 0
     # For each dimension
     for k in range(min(dimensions), max(dimensions)):
         x = []  # r: row (birth)
@@ -69,6 +70,5 @@ def plot_birth_persistence(pivots_rc, diameters, dimensions, y0_fmt="k--", outpu
             positive_yx.sort(reverse=True)
             positive_xy = [(x,y) for y,x in positive_yx]
             print(positive_xy)
-    axes.plot([0, 1], [0, 0], y0_fmt)  # y = 0
     axes.legend()
     figure.savefig(output_filename)
