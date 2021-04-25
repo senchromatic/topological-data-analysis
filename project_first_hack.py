@@ -196,10 +196,10 @@ if __name__ == '__main__':
     #     for k in range(1, MAX_ASC_DIMENSION+1):
     #         asc.compute_boundary(k)
     
-    plot_birth_death(f.boundary_matrix.find_pivots_rc(), f.ordered_diameters)
+    plot_birth_death(f.boundary_matrix.find_pivots_rc(), f.ordered_diameters, f.ordered_dimensions)
     pyplot.show()
 
-    plot_birth_persistence(f.boundary_matrix.find_pivots_rc(), f.ordered_diameters)
+    plot_birth_persistence(f.boundary_matrix.find_pivots_rc(), f.ordered_diameters, f.ordered_dimensions)
     pyplot.show()
 
     # for rr in np.arange(0.1, 1, 0.1):
