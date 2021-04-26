@@ -1,8 +1,9 @@
-from abstract_simplicial_complex import Point, Simplex, ASC
+from abstract_simplicial_complex import Point, Simplex, Boundary, ASC
 from copy import deepcopy
 from itertools import combinations
 from math import pow
 from sparse_matrix import Z2SparseSquareMatrix
+from z2array import z2array_zeros, z2rank
 
 import numpy as np
 
@@ -27,6 +28,7 @@ USE_GEOMETRIC_SAMPLING = True  # False: approximately equal number of edges per 
 #  coface_adjlist: list of (list of (list of simplices for which this simplex is a face) for each simplex) for each dimension
 #  num_faces_remaining: list of (list of integers representing the number of faces not yet filled in for each simplex) for each dimension
 #  boundary_matrix: boundary (sparse square Z_2) matrix of the filtered ASC, constructed and reduced in generate_filtration
+#  ordered_simplices: list of simplices (in order of being added to the filtration), used for computing homologies
 #  ordered_diameters: list of diameters (one for each simplex added), used for plotting persistence diagrams
 #  ordered_dimensions: list of dimensions (for for each simplex added), used for plotting persistence diagrams 
 class Filtration:
@@ -204,13 +206,16 @@ class Filtration:
         # Initialize a 1-dimensional dictionary from simplex to order in which it was added
         # (note that unlike simplex_indices, this is a flat list for all simplices, as necessary for the boundary matrix)
         simplex_ordering = {}
+        # Initialize the inverse map of simplex_ordering
+        self.ordered_simplices = []
         # List of ordering to diameters, in general containing duplicates; the values of simplex_ordering are the indices of ordered_diameters
         self.ordered_diameters = []
         # List of ordering to dimensions, in general containing duplicates; the values of simplex_ordering are the indices of ordered_dimensions
         self.ordered_dimensions = []
-        # Add all 0-dimension simplices to simplex_ordering, ordered_diameters, and ordered_dimensions
+        # Add all 0-dimension simplices to simplex_ordering, ordered_simplices, ordered_diameters, and ordered_dimensions
         for p in self.ordered_points:
             simplex_ordering[Simplex({p})] = len(simplex_ordering)
+            self.ordered_simplices.append(Simplex({p}))
             self.ordered_diameters.append(0)
             self.ordered_dimensions.append(0)
         i = 0  # list index in distance_ordered_pairs
@@ -240,6 +245,7 @@ class Filtration:
                 next_simplices_queue = []
                 for new_face in new_simplices_queue:
                     simplex_ordering[new_face] = len(simplex_ordering)
+                    self.ordered_simplices.append(new_face)
                     self.ordered_diameters.append(diameter)
                     k = new_face.dimension()
                     self.ordered_dimensions.append(k)
@@ -284,3 +290,52 @@ class Filtration:
             print("Non-reduced (sparse) boundary matrix")
             print(self.boundary_matrix)
         self.boundary_matrix.column_reduction(verbose=(verbosity >= 2))
+    
+    # Returns a dict of column index (in the sparse matrix) to (non-trivial) homologies
+    # Each homology is internally represented as a Boundary object
+    def extract_homologies(self):
+        homologies = dict()
+        cycle_indices = self.boundary_matrix.find_all_cycle_indices()
+        for ci in cycle_indices:
+            sim_indices = self.boundary_matrix.get_cycle_at_index(ci)
+            # Skip trivial homologies
+            if not sim_indices:
+                continue
+            # Extract the simplices in this cycle based on the indices
+            cycle_simplices = [self.ordered_simplices[cj] for cj in sim_indices.entries]
+            k = cycle_simplices[0].dimension()
+            # Obtain B_k = Im(del_{k+1})
+            diameter_index = self.ordered_dimensions[ci]
+            birth_asc = self.asc_sequence[diameter_index]
+            birth_asc.compute_boundary(k+1)
+            image_space = birth_asc.extract_boundary_image(k+1)
+            ordered_chains = sorted(image_space.chains)
+            # Number the k-simplices
+            simplex_numbering = dict()
+            for sim in cycle_simplices:
+                simplex_numbering[sim] = len(simplex_numbering)
+            for boundary in ordered_chains:
+                for sim in boundary.simplices:
+                    if sim in simplex_numbering:
+                        continue
+                    simplex_numbering[sim] = len(simplex_numbering)
+            num_rows = len(ordered_chains)
+            num_cols = len(simplex_numbering)
+            # Construct a matrix for the image space
+            # The (r,c) entries of each r-th row in the matrix indicate whether this chain contains the c-th simplex.
+            image_space_matrix = z2array_zeros((num_rows+1, num_cols))
+            for r, chains in enumerate(ordered_chains):
+                for sim in chains.simplices:
+                    image_space_matrix[r, simplex_numbering[sim]] = 1
+            image_space_rank = z2rank(image_space_matrix, nullspace=False)
+            # Adjoin a new row for the cycle
+            for sim in cycle_simplices:
+                image_space_matrix[num_rows, simplex_numbering[sim]] = 1
+            # Skip bounded cycles
+            if image_space_rank == z2rank(image_space_matrix, nullspace=False):
+                continue
+            homology = Boundary()
+            for sim in cycle_simplices:
+                homology.xor(sim)  # Each sim should only be added once
+            homologies[ci] = homology
+        return homologies

@@ -7,7 +7,7 @@ from collections import defaultdict
 UNDEFINED_LOW_FOR_EMPTY_COLUMN = -1
 
 # A column of coefficients in Z_2
-# entries: set of positive indices 
+# entries: set of positive indices
 class Z2SparseColumn:
     def __init__(self):
         self.entries = set()
@@ -64,6 +64,7 @@ class Z2SparseSquareMatrix:
     def column_reduction(self, verbose=False):
         pivot_cache = defaultdict(list)  # Dictionary from get_low to matching columns with index < cj
         for cj in range(self.M):
+            self.cycle_sums[cj].flip_bit(cj)
             if verbose:
                 print("Reducing column", cj, "of", self.M)
             # Skip empty column
@@ -80,7 +81,7 @@ class Z2SparseSquareMatrix:
                     if cj_low == UNDEFINED_LOW_FOR_EMPTY_COLUMN:
                         continue
                     self.columns[cj].add(self.columns[ci])
-                    self.cycle_sum[cj].flip_bit(ci)
+                    self.cycle_sums[cj].flip_bit(ci)
                     added_columns = True
                     cj_low = self.columns[cj].get_low()
             pivot_cache[self.columns[cj].get_low()].append(cj)
@@ -102,3 +103,15 @@ class Z2SparseSquareMatrix:
     # (should only be called on reduced matrix)
     def find_pivots_rc(self):
         return sorted([(r, c) for c, r in self.find_pivots_cr()])
+    
+    # Returns an ordered list of zero columns
+    def find_all_cycle_indices(self):
+        all_indices = []
+        for c, col in enumerate(self.columns):
+            if col.is_cycle():
+                all_indices.append(c)
+        return all_indices
+    
+    # c: column index
+    def get_cycle_at_index(self, c):
+        return self.cycle_sums[c]

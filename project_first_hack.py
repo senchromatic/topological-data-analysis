@@ -13,7 +13,7 @@ from metrics import ks_test
 from random import sample, seed
 from scipy.interpolate import interp1d
 from statfuncs import ecdf
-from visualization import plot_birth_death, plot_birth_persistence
+from visualization import extract_persistence_rankings, plot_birth_death, plot_birth_persistence
 
 
 # Global constants (bad)
@@ -196,12 +196,32 @@ if __name__ == '__main__':
     #     for k in range(1, MAX_ASC_DIMENSION+1):
     #         asc.compute_boundary(k)
     
-    plot_birth_death(f.boundary_matrix.find_pivots_rc(), f.ordered_diameters, f.ordered_dimensions)
+    # Save information needed for visualization and computing homologies
+    # TODO: Move these into Filtration class, eschew local variables
+    pivots_rc = f.boundary_matrix.find_pivots_rc()
+    diameters = f.ordered_diameters
+    dimensions = f.ordered_dimensions
+    
+    print()
+    plot_birth_death(pivots_rc, diameters, dimensions)
     pyplot.show()
 
-    plot_birth_persistence(f.boundary_matrix.find_pivots_rc(), f.ordered_diameters, f.ordered_dimensions)
+    print()
+    plot_birth_persistence(pivots_rc, diameters, dimensions)
     pyplot.show()
-
+    
+    homologies = f.extract_homologies()
+    rankings = extract_persistence_rankings(pivots_rc, diameters, dimensions)
+    print()
+    for k in rankings.keys():  # for each dimension
+        print(str(k) + "-homologies:")
+        for index, birth, persistence in rankings[k]:  # for each homology
+            print("(index, birth, persistence) = (" + str(index) + ", " + str(birth) + ", " + str(persistence) + ")")
+            if index not in homologies:
+                continue
+            print(homologies[index])
+        print()
+    
     # for rr in np.arange(0.1, 1, 0.1):
     #     rips_asc = vietoris_rips(point_cloud, MAX_ASC_DIMENSION, rr)
     #     print("Radius = "+str(rr))
