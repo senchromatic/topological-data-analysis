@@ -26,6 +26,10 @@ class Z2SparseColumn:
     def get_low(self):
         return max(self.entries) if self.entries else UNDEFINED_LOW_FOR_EMPTY_COLUMN
     
+    # Returns True for zero columns, else False
+    def is_cycle(self):
+        return self.get_low() == UNDEFINED_LOW_FOR_EMPTY_COLUMN
+    
     def add(self, other_column):
         # Equivalent to xor (set_difference is equally efficient)
         # self.entries = self.entries ^ other_column.entries
@@ -34,12 +38,14 @@ class Z2SparseColumn:
 
 # A sparse, square matrix (MxM) with coefficients in Z_2
 # columns: A dictionary from column number to the Z2SparseColumn
+# cycle_sums: A dictionary from column number to the simplices added to this column
 # M: number of rows and columns
 # is_reduced: whether column_reduction has been called
 class Z2SparseSquareMatrix:
     def __init__(self, M):
         self.M = M
         self.columns = [Z2SparseColumn() for _ in range(M)]
+        self.cycle_sums = [Z2SparseColumn() for _ in range(M)]
         self.is_reduced = False
     
     # Print an ordered list of entries in each column
@@ -74,6 +80,7 @@ class Z2SparseSquareMatrix:
                     if cj_low == UNDEFINED_LOW_FOR_EMPTY_COLUMN:
                         continue
                     self.columns[cj].add(self.columns[ci])
+                    self.cycle_sum[cj].flip_bit(ci)
                     added_columns = True
                     cj_low = self.columns[cj].get_low()
             pivot_cache[self.columns[cj].get_low()].append(cj)
