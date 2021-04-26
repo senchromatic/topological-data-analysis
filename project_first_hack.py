@@ -8,10 +8,12 @@ import pylab as pl # This gets used a lot I promise
 
 from abstract_simplicial_complex import Point, Simplex, vietoris_rips
 from filtration import Filtration
+from matplotlib import pyplot
 from metrics import ks_test
 from random import sample, seed
 from scipy.interpolate import interp1d
 from statfuncs import ecdf
+from visualization import plot_birth_death, plot_birth_persistence
 
 
 # Global constants (bad)
@@ -194,9 +196,12 @@ if __name__ == '__main__':
     #     for k in range(1, MAX_ASC_DIMENSION+1):
     #         asc.compute_boundary(k)
     
-    print("(Birth, death) points: ")
-    print(f.boundary_matrix.find_pivots_rc())
-    
+    plot_birth_death(f.boundary_matrix.find_pivots_rc(), f.ordered_diameters, f.ordered_dimensions)
+    pyplot.show()
+
+    plot_birth_persistence(f.boundary_matrix.find_pivots_rc(), f.ordered_diameters, f.ordered_dimensions)
+    pyplot.show()
+
     # for rr in np.arange(0.1, 1, 0.1):
     #     rips_asc = vietoris_rips(point_cloud, MAX_ASC_DIMENSION, rr)
     #     print("Radius = "+str(rr))
