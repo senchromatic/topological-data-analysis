@@ -1,5 +1,5 @@
-#Zhang, Pereira, LeDuc
-#Code for doing matrix algebra in Z/2
+# Zhang, Pereira, LeDuc
+# Code for doing matrix algebra in Z/2
 import numpy as np
 
 
@@ -122,12 +122,16 @@ def z2row_echelon(z2mat, copy_mat=True):
     Return row echelon form of matrix,
     respecting Z2 arithmetic.
 
-    Copied from the recursive implementation
+    Based on the recursive implementation
     here, https://math.stackexchange.com/
     questions/3073083/how-to-reduce
     -matrix-into-row-echelon-form-
     in-python/3073117,
-    but slightly modified for Z2.
+    but modified to work in Z2 and to not
+    use functional recursion, which gives
+    a stack recursion limit for large matrices
+    like those we encounter when calculation
+    boundaries of our ASCs with real data.
 
     (The arithmetic below will work correctly
     because of the overloaded array class.
@@ -144,40 +148,51 @@ def z2row_echelon(z2mat, copy_mat=True):
     else:
         A = z2mat
 
-    # Check if we're done.
-    r, c = A.shape
-    if r == 0 or c == 0:
-        return A
+    # A_ is a pointer to a subarray of A.
+    # We can do the recursion here without
+    # recursive function calls.
+    A_ = A  # A reference, not a copy.
+    r, c = A_.shape  # We'll recalculate these as we go.
+    while (r > 0 and c > 0):
 
-    # Find pivot
-    for i in range(len(A)):
-        if A[i, 0] != 0:
-            break
-    else:
-        B = z2row_echelon(A[:, 1:],
-                          copy_mat=False)
-        return np.hstack([A[:, :1], B])
+        # Find pivot
+        col_all_zeros = True  # We use this bool flag for a check below.
+        for i in range(len(A_)):
+            if A_[i, 0] != 0:
+                # We found a nonzero element, so column is not all zeros.
+                # And i is the pivot row.
+                col_all_zeros = False
+                break
+        # If the column is all zeros, move on to the next column.
+        if col_all_zeros:
+            A_ = A_[:, 1:]
+            r, c = A_.shape
+            continue
 
-    # Do row exchange if needed.
-    if i > 0:
-        ith_row = A[i].copy()
-        A[i] = A[0]
-        A[0] = ith_row
+        # Do row exchange if needed.
+        if i > 0:
+            ith_row = A_[i].copy()
+            A_[i] = A_[0]
+            A_[0] = ith_row
 
-    """
-    Zero out column entries below pivot.
+        """
+        Zero out column entries below pivot.
 
-    This arithmetic is in Z2 if the input
-    numpy array is of our Z2array type.
-    Hence the type-checking at the top.
-    """
-    A[1:] = A[1:] - (A[0] * A[1:, 0:1])
+        This arithmetic is in Z2 if the input
+        numpy array is of our Z2array type.
+        Hence the type-checking at the top.
+        """
+        A_[1:] = A_[1:] - (A_[0] * A_[1:, 0:1])
 
-    # Move on to next column.
-    B = z2row_echelon(A[1:, 1:],
-                      copy_mat=False)
+        # Move on to next column.
+        A_ = A_[1:, 1:]
+        r, c = A_.shape
 
-    return z2array(np.vstack([A[:1], np.hstack([A[1:, :1], B])]))
+    return A
+
+
+def z2column_echelon(z2mat, copy_mat=True):
+    return z2row_echelon(z2mat.T, copy_mat=copy_mat).T
 
 
 def z2rank(z2mat, nullspace=True):
@@ -490,3 +505,17 @@ if __name__ == "__main__":
     print(f"\nBasis for null space:\n{null_basisM5}")
     print("\n Multiplying vectors in the null space of Array 5 by Array 5:")
     print(M5 @ null_basisM5)
+
+    # Takes a while to run because the matrix is big, but passes.
+    #print("\n\nRecursion test")
+    #big_matrix = Z2array(np.abs(np.random.rand(5000, 2000)).round().astype(np.int))
+    #z2row_echelon(big_matrix)
+    # If we don't get a recursion error, we pass.
+    #print("Passed. (No recursion limit error).")
+
+    print("\n\n@@@@@@@@@@@@@@@@@@@@@@@@@@")
+    print("Visual check for column echelon form:")
+    print("@@@@@@@@@@@@@@@@@@@@@@@@@@")
+    print(f"\nTesting bases with Array 5:\n{M5}")
+    crM5 = z2column_echelon(M5)
+    print(f"\nColumn echelon form:\n{crM5}")

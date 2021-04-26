@@ -189,7 +189,7 @@ class ASC:
   def all_dimensions(self):
     return set([sim.dimension() for sim in self.simplices])
   
-  # All simplices of dimesion k, for a given k
+  # All simplices of dimension k, for a given k
   def k_simplices(self, k):
     return set(filter(lambda sim : sim.dimension() == k, self.simplices))
   
