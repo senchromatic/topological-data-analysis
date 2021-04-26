@@ -8,12 +8,14 @@ import pylab as pl # This gets used a lot I promise
 
 from abstract_simplicial_complex import Point, Simplex, vietoris_rips
 from filtration import Filtration
+from matplotlib import pyplot
 from metrics import ks_test
 from random import sample, seed
 from scipy.interpolate import interp1d
 from statfuncs import ecdf
-# import sys
-# sys.setrecursionlimit(1000)
+from visualization import plot_birth_death, plot_birth_persistence
+
+
 # Global constants (bad)
 # TODO: move these into a config file?
 USE_RANDOM_SAMPLING = True  # Read a random sample of points from the input data
@@ -21,7 +23,7 @@ MIN_POINTS_FOR_KL_DIVERGENCE = 4  # Minimum number of points needed to compute K
 TEST_SAMPLE_SIZE = 2000  # Number of points to extract from dataset (non-random sampling)
 MIN_SIGNIFICANCE_LEVEL = 0.05  # Used in Kolmogorov-Smirnov test
 MAX_ASC_DIMENSION = 2  # Maximum dimension of the simplices considered in the output ASC
-MAX_FILTRATION_DIAMETER = 0.99  # Diameters beyond this value will be excluded from the filtration
+MAX_FILTRATION_DIAMETER = 2  # Diameters beyond this value will be excluded from the filtration
 
 # Read a subset of data from multiple years (currently, 2 years -- hardcoded)
 def read_raw_data(sample_size=None, sample_randomly=True, random_seed=0):
@@ -205,9 +207,12 @@ if __name__ == '__main__':
     #     for k in range(1, MAX_ASC_DIMENSION+1):
     #         asc.compute_boundary(k)
     
-    print("(Birth, death) points: ")
-    print(f.boundary_matrix.find_pivots_rc())
-    
+    plot_birth_death(f.boundary_matrix.find_pivots_rc(), f.ordered_diameters, f.ordered_dimensions)
+    pyplot.show()
+
+    plot_birth_persistence(f.boundary_matrix.find_pivots_rc(), f.ordered_diameters, f.ordered_dimensions)
+    pyplot.show()
+
     # for rr in np.arange(0.1, 1, 0.1):
     #     rips_asc = vietoris_rips(point_cloud, MAX_ASC_DIMENSION, rr)
     #     print("Radius = "+str(rr))

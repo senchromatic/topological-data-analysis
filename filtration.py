@@ -27,6 +27,8 @@ USE_GEOMETRIC_SAMPLING = True  # False: approximately equal number of edges per 
 #  coface_adjlist: list of (list of (list of simplices for which this simplex is a face) for each simplex) for each dimension
 #  num_faces_remaining: list of (list of integers representing the number of faces not yet filled in for each simplex) for each dimension
 #  boundary_matrix: boundary (sparse square Z_2) matrix of the filtered ASC, constructed and reduced in generate_filtration
+#  ordered_diameters: list of diameters (one for each simplex added), used for plotting persistence diagrams
+#  ordered_dimensions: list of dimensions (for for each simplex added), used for plotting persistence diagrams 
 class Filtration:
     # Parameters
     #  points: set of Point
@@ -95,7 +97,7 @@ class Filtration:
         self.all_simplices = [[] for k in range(self.max_dimension + 1)]
         assert(self.ordered_points == sorted(self.ordered_points))
         # Populate each list of simplices, and sort the list
-        for k in range(1, self.max_dimension + 1):  # for each dimension (above 0)
+        for k in range(self.max_dimension + 1):  # for each dimension (including 0)
             for subset in combinations(self.ordered_points, k+1):
                 self.all_simplices[k].append(Simplex(points=set(subset)))
             self.all_simplices[k].sort()
@@ -135,7 +137,7 @@ class Filtration:
     
     # 2-dimensional array for (dimension, simplex index)
     def create_zeroth_indices(self):
-        # Initialie 2d array
+        # Initialize 2d array
         dimension_indices = [[] for k in range(self.max_dimension + 1)]
         # Populate all indices from the 0-th dimension
         dimension_indices[0] = [i for i in range(len(self.ordered_points))]
@@ -202,6 +204,15 @@ class Filtration:
         # Initialize a 1-dimensional dictionary from simplex to order in which it was added
         # (note that unlike simplex_indices, this is a flat list for all simplices, as necessary for the boundary matrix)
         simplex_ordering = {}
+        # List of ordering to diameters, in general containing duplicates; the values of simplex_ordering are the indices of ordered_diameters
+        self.ordered_diameters = []
+        # List of ordering to dimensions, in general containing duplicates; the values of simplex_ordering are the indices of ordered_dimensions
+        self.ordered_dimensions = []
+        # Add all 0-dimension simplices to simplex_ordering, ordered_diameters, and ordered_dimensions
+        for p in self.ordered_points:
+            simplex_ordering[Simplex({p})] = len(simplex_ordering)
+            self.ordered_diameters.append(0)
+            self.ordered_dimensions.append(0)
         i = 0  # list index in distance_ordered_pairs
         # For each selected diameter
         for diameter in selected_diameters:
@@ -229,7 +240,9 @@ class Filtration:
                 next_simplices_queue = []
                 for new_face in new_simplices_queue:
                     simplex_ordering[new_face] = len(simplex_ordering)
+                    self.ordered_diameters.append(diameter)
                     k = new_face.dimension()
+                    self.ordered_dimensions.append(k)
                     # Birth: dimension = k
                     new_asc.add_simplex(new_face.copy())
                     if verbosity >= 2:
