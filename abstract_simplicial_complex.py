@@ -382,7 +382,7 @@ class ASC:
           new_z2mat[r, idx_simplices[sim]] = 1
       return new_z2mat
     # Initialize the homology (quotient basis) and a z2mat of full rank (independent spanning vectors).
-    # The (r,c) entries of each r-th row in the matrix indicate wheter it contains the c-th simplex.
+    # The (r,c) entries of each r-th row in the matrix indicate whether it contains the c-th simplex.
     homology = ChainCollection()
     independent_coordinates = compute_coordinates(images, images.size())
     if verbose:

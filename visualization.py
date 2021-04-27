@@ -10,6 +10,28 @@ DIMENSIONAL_COLOR_LABELS = ["connected components (k=0)", "holes (k=1)", "voids 
 DEFAULT_OPACITY = 0.3  # alpha = 1 - transparency
 DEFAULT_MARKER_SIZE = 25  # (pixels width) ^ 2
 
+
+# Returns a dictionary from dimension to ordered list of (birth_index, birth diameter, persistence)
+# pivots_rc: list of (row, column) pairs
+# diameters: list of diameter corresponding to each index among values in pivots_rc 
+# dimensions: list of simplex dimension corresponding to each index among values in pivots_rc
+# exclude_non_persistent: exclude homologies with birth = death 
+def extract_persistence_rankings(pivots_rc, diameters, dimensions, exclude_non_persistent=True):
+    rankings = defaultdict(list)
+    for r, c in pivots_rc:
+        k = dimensions[r]
+        birth_index = r
+        birth = diameters[birth_index]
+        death = diameters[c]
+        persistence = death - birth
+        if exclude_non_persistent and persistence == 0:
+            continue
+        rankings[k].append((birth_index, birth, persistence))
+    # Order by decreasing persistence, and then increasing birth_index
+    for k in range(min(dimensions), max(dimensions)):
+        rankings[k].sort(key = lambda ibp: (-ibp[2], ibp[0]))
+    return rankings
+
 # pivots_rc: list of (row, column) pairs
 # diameters: list of diameter corresponding to each index among values in pivots_rc 
 # dimensions: list of simplex dimension corresponding to each index among values in pivots_rc 
@@ -35,6 +57,7 @@ def plot_birth_death(pivots_rc, diameters, dimensions, xy_fmt="k--", output_file
         if verbose:
             print("(Birth diameter, death diameter) for " + str(k) + "-homologies, ordered by increasing birth: ")
             print(list(zip(x,y)))
+        print()
     axes.legend()
     figure.savefig(output_filename)
 
@@ -61,14 +84,14 @@ def plot_birth_persistence(pivots_rc, diameters, dimensions, y0_fmt="k--", outpu
         # Plot homologies at dimension k
         axes.scatter(x, y, color=DIMENSIONAL_COLOR_CODES[k], label=DIMENSIONAL_COLOR_LABELS[k], alpha=DEFAULT_OPACITY, s=DEFAULT_MARKER_SIZE)
         if verbose:
-            print("(Birth diameter, persistence) for " + str(k) + "-homologies with persistence > 0, orderd by decreasing persistence: ")
+            print("(Birth diameter, persistence) for persistent " + str(k) + "-homologies, orderd by decreasing persistence: ")
             # Sort by persistence, and then swap order in each tuple to print (diameter, persistence)
-            positive_yx = []
+            positive_xy = []
             for i in range(len(y)):
                 if y[i] > 0:
-                    positive_yx.append((y[i], x[i]))
-            positive_yx.sort(reverse=True)
-            positive_xy = [(x,y) for y,x in positive_yx]
+                    positive_xy.append((x[i], y[i]))
+            positive_xy.sort(key=lambda xy: xy[1], reverse=True)
             print(positive_xy)
+        print()
     axes.legend()
     figure.savefig(output_filename)
