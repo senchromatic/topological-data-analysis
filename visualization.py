@@ -81,18 +81,14 @@ def plot_barcodes( pivots_rc, diameters, dimensions, output_filename="barcodes.p
         sp.set(xlabel="Diameter", ylabel="Homology number", title="Barcodes for H"+str(k))
         start = []
         fin = []
-        y = [0]
         for r,c in pivots_rc:
             if dimensions[r]!=k:
                 continue
-          
             start.append(diameters[r])
             fin.append(diameters[c])
-            y.append(y[-1]+1)
         inds = np.flip(np.argsort( np.array(fin)-np.array(start) ))
         nn = 1
         for ii in inds:
-            
             sp.plot( [start[ii], fin[ii]], [nn,nn], color=DIMENSIONAL_COLOR_CODES[k] )
             nn+=1
     
