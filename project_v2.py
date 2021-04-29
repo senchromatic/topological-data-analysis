@@ -1,29 +1,25 @@
 ## LeDuc, Pereira, Zhang
 # This is a first hack at working with the project data using the KL divergence to measure the distance
 # between two probability distributions of the depth of minimum sound speed.
-
 import numpy as np
 import pandas as pd
 import pylab as pl # This gets used a lot I promise
-
 from abstract_simplicial_complex import Point, Simplex, vietoris_rips
-from filtration import Filtration
-from matplotlib import pyplot
 from metrics import ks_test
 from random import sample, seed
 from scipy.interpolate import interp1d
 from statfuncs import ecdf
-from visualization import extract_persistence_rankings, plot_birth_death, plot_birth_persistence
-
+print('AAAAAAAAAA')
+# import sys
+# sys.setrecursionlimit(1000)
 
 # Global constants (bad)
 # TODO: move these into a config file?
 USE_RANDOM_SAMPLING = True  # Read a random sample of points from the input data
-MIN_POINTS_FOR_KL_DIVERGENCE = 4  # Minimum number of points needed to compute KL divergence
-TEST_SAMPLE_SIZE = 2000  # Number of points to extract from dataset (non-random sampling)
+MIN_POINTS_FOR_KL_DIVERGENCE = 4 # Minimum number of points needed to compute KL divergence
+TEST_SAMPLE_SIZE = 2500  # Number of points to extract from dataset (non-random sampling)
 MIN_SIGNIFICANCE_LEVEL = 0.05  # Used in Kolmogorov-Smirnov test
-MAX_ASC_DIMENSION = 2  # Maximum dimension of the simplices considered in the output ASC
-MAX_FILTRATION_DIAMETER = 2  # Diameters beyond this value will be excluded from the filtration
+MAX_ASC_DIMENSION = 2 # Maximum dimension of the simplices considered in the output ASC
 
 # Read a subset of data from multiple years (currently, 2 years -- hardcoded)
 def read_raw_data(sample_size=None, sample_randomly=True, random_seed=0):
@@ -197,47 +193,52 @@ if __name__ == '__main__':
     # Generate an ASC based on Kolmogorov-Smirnov distances fed into Vietoris-Rips algorithm
     geographic_names = generate_geographic_names(masked_latitudes, masked_longitudes)
     point_cloud = create_point_cloud(geographic_names, masked_cdfs, ks_test)
+    a = MIN_SIGNIFICANCE_LEVEL
+    c_a = np.sqrt(-np.log(a/2)*0.5)
 
-    # f = Filtration(point_cloud, len(point_cloud) - 1)
-    f = Filtration(point_cloud, max_dimension=MAX_ASC_DIMENSION)
-    f.print_metadata()
-    f.generate_filtration(verbosity=1, maximum_diameter=MAX_FILTRATION_DIAMETER)
-    # f.print_filtration()
-    # for asc in f.asc_sequence:
-    #     for k in range(1, MAX_ASC_DIMENSION+1):
-    #         asc.compute_boundary(k)
-    
-    # Save information needed for visualization and computing homologies
-    # TODO: Move these into Filtration class, eschew local variables
-    pivots_rc = f.boundary_matrix.find_pivots_rc()
-    diameters = f.ordered_diameters
-    dimensions = f.ordered_dimensions
-    
-    print()
-    plot_birth_death(pivots_rc, diameters, dimensions)
-    pyplot.show()
+    ## Value the metric needs to exceed to reject the ks test null hypothesis at the given significance level
+    critical_value = c_a * np.sqrt(2 / len(depths))
+    dr = 0.01
+    radii = np.arange(minRadius, 0.46, dr)
+    # After ~ r = 0.29 the KS test rejects F_1=F_2 at the .05 level. Do we care much about what happens past there?
+    # At that point the dists are statistically disimilar so grouping them may not be meaningful.
+    # First pass it appears that all the cool stuff happens around there
+    # so maybe we do
 
-    print()
-    plot_birth_persistence(pivots_rc, diameters, dimensions)
-    pyplot.show()
-    
-    homologies = f.extract_homologies()
-    rankings = extract_persistence_rankings(pivots_rc, diameters, dimensions)
-    print()
-    for k in rankings.keys():  # for each dimension
-        print(str(k) + "-homologies:")
-        for index, birth, persistence in rankings[k]:  # for each homology
-            print("(index, birth, persistence) = (" + str(index) + ", " + str(birth) + ", " + str(persistence) + ")")
-            if index not in homologies:
-                continue
-            print(homologies[index])
-        print()
-    
-    # for rr in np.arange(0.1, 1, 0.1):
-    #     rips_asc = vietoris_rips(point_cloud, MAX_ASC_DIMENSION, rr)
-    #     print("Radius = "+str(rr))
-    #     print(rips_asc)
-    #     # Print simplices
-    #     for k in range(1,MAX_ASC_DIMENSION+1):
-    #         rips_asc.compute_boundary(k)
+    homologies = np.zeros( [2, len(radii)] )
+    for rndx in range(len(radii)):#want the index so we can store the dims of homologies
+        rr = radii[rndx]
+        rips_asc = vietoris_rips(point_cloud, MAX_ASC_DIMENSION, rr)
+        print("Radius = "+str(rr))
+        # Print simplices
+        for k in range( MAX_ASC_DIMENSION+1):
+            rips_asc.compute_boundary(k)
+        for k in range(MAX_ASC_DIMENSION):
+            if not( rips_asc.boundary_matrix[k+1] is None):
+                thisHomology = rips_asc.compute_homology(k)
+                homologies[k,rndx] = len( thisHomology.chains )
+            else:
+                #If C_{k+1} is empty then Im(del_{k+1}) = {} so H_k = ker(del_k)
+                homologies[ k, rndx ] = len(rips_asc.extract_kernel_cycles(k).chains)
+    pl.plot(radii, homologies[0,:])
+    pl.plot(radii, homologies[1,:])
+    pl.show()
+    coolrads = [np.round(critical_value, 2)]
+    for rads in coolrads:
+
+        persistent = vietoris_rips(point_cloud, MAX_ASC_DIMENSION, rads)
+        simplexFile = open('persistent_homology_simplex_names_radius'+str(rads)+'_mysterydata.txt', 'w')
+        ps = list(persistent.simplices)
+        for pp in range(len(ps)):
+            print(ps[pp])
+            psp = list(ps[pp].points)
+            for pnt in range(len(psp)):
+                simplexFile.write(psp[pnt].name+' , ')
+            simplexFile.write('\n')
+        simplexFile.close()
+    coords = np.zeros([2, len(masked_latitudes)])
+    coords[0,:] = masked_latitudes
+    coords[1,:] = masked_longitudes
+    np.savetxt('coords.csv',coords, delimiter = ',')
+    np.savetxt('cdfs_'+str(TEST_SAMPLE_SIZE)+'points.csv', masked_cdfs, delimiter = ',')
 

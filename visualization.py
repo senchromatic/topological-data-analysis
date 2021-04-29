@@ -2,7 +2,7 @@
 
 from collections import defaultdict
 from matplotlib import pyplot
-
+import numpy as np
 # One color per homology dimension (0: blue, 1: green, 2: red, 3: yellow)
 DIMENSIONAL_COLOR_CODES = "bgry"
 DIMENSIONAL_COLOR_LABELS = ["connected components (k=0)", "holes (k=1)", "voids (k=2)", "3-homologies (k=3)"]
@@ -95,3 +95,24 @@ def plot_birth_persistence(pivots_rc, diameters, dimensions, y0_fmt="k--", outpu
         print()
     axes.legend()
     figure.savefig(output_filename)
+
+def plot_barcodes( pivots_rc, diameters, dimensions, output_filename="barcodes.png", verbose=True):
+    figure = pyplot.subplots()
+    n_plots = len(range(min(dimensions), max(dimensions)))
+    for k in range(min(dimensions), max(dimensions)):
+        sp = pyplot.subplot( n_plots, 1, 1+k)
+        sp.set(xlabel="Diameter", ylabel="Homology number", title="Barcodes for H"+str(k))
+        start = []
+        fin = []
+        for r,c in pivots_rc:
+            if dimensions[r]!=k:
+                continue
+            start.append(diameters[r])
+            fin.append(diameters[c])
+        inds = np.flip(np.argsort( np.array(fin)-np.array(start) ))
+        nn = 1
+        for ii in inds:
+            sp.plot( [start[ii], fin[ii]], [nn,nn], color=DIMENSIONAL_COLOR_CODES[k] )
+            nn+=1
+    
+            

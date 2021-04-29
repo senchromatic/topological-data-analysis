@@ -21,13 +21,18 @@ def close_enough(a, b, metric):
 # Kullback-Leibler divergence, modified to be symmetric
 # Input: two CDFs of identical shape, e.g. generated from the ecdf function
 # Note: This is a semi-metric as it doesn't satisfy the triangle inequality
-def sym_kl(cdf1 , cdf2, dx):
+def sym_kl(cdf1 , cdf2):
     # First step is to take them and turn them into PDFs
-    f1 = np.gradient(cdf1)
-    f1 /= np.sum(f1)
+    depths = np.loadtxt('depths.csv')
+    f1 = [(cdf1[ii]-cdf1[ii+1])/(depths[ii]-depths[ii+1]) for ii in range(len(cdf1)-1)]
+    f1.append(0)
+    f1 = np.array(f1)
+    f1/=np.sum(f1)
     
-    f2 = np.gradient(cdf2)
-    f2 /= np.sum(f2)
+    f2 = [(cdf2[ii]-cdf2[ii+1])/(depths[ii]-depths[ii+1]) for ii in range(len(cdf2)-1)]
+    f2.append(0)
+    f2 = np.array(f2)
+    f2/=np.sum(f2)
     
     # Scipy defines KL divergence as x*log(x/y)+x-y but it all comes out in the end.
     # Same values in each array are finite and nonzero so adding these together makes
