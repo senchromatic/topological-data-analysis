@@ -91,7 +91,6 @@ def plot_barcodes( pivots_rc, diameters, dimensions, output_filename="barcodes.p
         inds = inds[np.array(fin)-np.array(start) !=0]
         nn = 1
         for ii in inds:
-            
             sp.plot( [start[ii], fin[ii]], [nn,nn], color=DIMENSIONAL_COLOR_CODES[k] )
             nn+=1
         sp.set_xlim([0, max(diameters)])
