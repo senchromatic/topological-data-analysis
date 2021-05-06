@@ -74,26 +74,29 @@ def plot_birth_persistence(pivots_rc, diameters, dimensions, y0_fmt="k--", outpu
     figure.savefig(output_filename)
 
 def plot_barcodes( pivots_rc, diameters, dimensions, output_filename="barcodes.png", verbose=True):
-    figure = pyplot.subplots()
+    figure, axes = pyplot.subplots()
     n_plots = len(range(min(dimensions), max(dimensions)))
     for k in range(min(dimensions), max(dimensions)):
         sp = pyplot.subplot( n_plots, 1, 1+k)
         sp.set(xlabel="Diameter", ylabel="Homology number", title="Barcodes for H"+str(k))
         start = []
         fin = []
-        y = [0]
         for r,c in pivots_rc:
             if dimensions[r]!=k:
                 continue
-          
-            start.append(diameters[r])
-            fin.append(diameters[c])
-            y.append(y[-1]+1)
+            if diameters[c]-diameters[r]>0:
+                start.append(diameters[r])
+                fin.append(diameters[c])
         inds = np.flip(np.argsort( np.array(fin)-np.array(start) ))
+        inds = inds[np.array(fin)-np.array(start) !=0]
         nn = 1
         for ii in inds:
             
             sp.plot( [start[ii], fin[ii]], [nn,nn], color=DIMENSIONAL_COLOR_CODES[k] )
             nn+=1
+        sp.set_xlim([0, max(diameters)])
+        sp.set_ylim([0, nn+1])
+
+    pyplot.subplots_adjust(hspace = 0.41) 
     
             
